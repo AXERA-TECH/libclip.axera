@@ -134,7 +134,6 @@ python gradio_example.py
 ## Dependencies
 
 * [OpenCV](https://opencv.org/)
-* Axera SDK (preinstalled on target platforms)
 
 ---
 

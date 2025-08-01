@@ -128,7 +128,6 @@ python gradio_example.py
 ## 依赖项
 
 * [OpenCV](https://opencv.org/)
-* Axera SDK（已预装在目标平台上）
 
 ---
 
