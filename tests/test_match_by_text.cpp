@@ -33,9 +33,9 @@ int main(int argc, char *argv[])
     memset(&init_info, 0, sizeof(init_info));
 
     cmdline::parser parser;
-    parser.add<std::string>("ienc", 0, "encoder model(onnx model or axmodel)", false, "/home/axera/CLIP-ONNX-AX650-CPP/build/cnclip/cnclip_vit_l14_336px_vision_u16u8.axmodel");
-    parser.add<std::string>("tenc", 0, "text encoder model(onnx model or axmodel)", false, "/home/axera/CLIP-ONNX-AX650-CPP/build/cnclip/cnclip_vit_l14_336px_text_u16.axmodel");
-    parser.add<std::string>("vocab", 'v', "vocab path", false, "/home/axera/CLIP-ONNX-AX650-CPP/cn_vocab.txt");
+    parser.add<std::string>("ienc", 0, "encoder model(onnx model or axmodel)", true, "cnclip/cnclip_vit_l14_336px_vision_u16u8.axmodel");
+    parser.add<std::string>("tenc", 0, "text encoder model(onnx model or axmodel)", true, "cnclip/cnclip_vit_l14_336px_text_u16.axmodel");
+    parser.add<std::string>("vocab", 'v', "vocab path", true, "cnclip/cn_vocab.txt");
     parser.add<int>("language", 'l', "language choose, 0:english 1:chinese", false, 1);
     parser.add<std::string>("db_path", 'd', "db path", false, "clip_feat_db");
 
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
         sprintf(key, "%s", image_name.c_str());
         if (clip_contain(handle, key))
         {
-            printf("%s is exist %04ld/%04ld\n", key, i, image_paths.size());
+            // printf("%s is exist %04ld/%04ld\n", key, i, image_paths.size());
             continue;
         }
 
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 
         timer t;
         clip_add(handle, key, &image, 0);
-        printf("add image %s  %04ld/%04ld  %6.2fms\n", image_name.c_str(), i, image_paths.size(), t.cost());
+        // printf("add image %s  %04ld/%04ld  %6.2fms\n", image_name.c_str(), i, image_paths.size(), t.cost());
     }
     int topk = 10;
     std::vector<clip_result_item_t> results(topk);

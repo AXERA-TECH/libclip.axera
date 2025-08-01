@@ -238,7 +238,7 @@ clip_handle_t clip_create(clip_init_t *init_info)
         image_features.resize(it->value().size() / sizeof(float));
         memcpy(image_features.data(), it->value().data(), it->value().size());
         handle->m_image_features.push_back(image_features);
-        printf("key: %s, value size: %ld\n", it->key().ToString().c_str(), it->value().size());
+        // printf("key: %s, value size: %ld\n", it->key().ToString().c_str(), it->value().size());
     }
 
     return handle;
