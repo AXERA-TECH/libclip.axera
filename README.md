@@ -3,7 +3,7 @@
   <a href="README_zh.md">中文</a> | <strong>English</strong>
 </p>
 
-## CLIP-based Image Search SDK for Axera NPU SoCs (AX650 / AX650C / AX8850 / AX650A)
+## CLIP-based Image Search SDK for Axera NPU SoCs (AX650N / AX650A / AX8850N / AX8850)
 
 This SDK enables efficient text-to-image retrieval using CLIP (Contrastive Language–Image Pretraining), optimized for Axera’s NPU-based SoC platforms including AX650, AX650C, AX8850, and AX650A, or Axera's dedicated AI accelerator.
 
@@ -70,10 +70,10 @@ sudo apt install libopencv-dev build-essential
 ---
 ## Performance
 
-| Model | Input Shape |  Latency (ms) |
+| Model | Input Shape |  Latency (ms) | CMM Usage (MB) |
 |-------|------------|--------------|
-| cnclip_vit_l14_336px_vision_u16u8.axmodel | 1 x 3 x 336 x 336 |  88.475 ms |
-| cnclip_vit_l14_336px_text_u16.axmodel | 1 x 52 |  4.576 ms |
+| cnclip_vit_l14_336px_vision_u16u8.axmodel | 1 x 3 x 336 x 336 |  88.475 ms | 304 MB |
+| cnclip_vit_l14_336px_text_u16.axmodel | 1 x 52 |  4.576 ms | 122 MB |
 ---
 
 ## Usage Example
@@ -122,6 +122,15 @@ match text "dog"   8.86ms
 
 ---
 
+## Web demo
+```
+python gradio_example.py 
+
+* Running on local URL:  http://127.0.0.1:7860
+* To create a public link, set `share=True` in `launch()`.
+```
+![](pyclip/gradio_example.png)
+---
 ## Dependencies
 
 * [OpenCV](https://opencv.org/)

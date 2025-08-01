@@ -2,7 +2,7 @@
   <a href="README.md">English</a> | <strong>中文</strong>
 </p>
 
-## 基于CLIP的Axera NPU SoCs（AX650 / AX650C / AX8850 / AX650A）图像搜索SDK
+## 基于CLIP的Axera NPU SoCs(AX650N / AX650A / AX8850N / AX8850）图像搜索SDK
 
 本SDK支持使用CLIP（对比语言-图像预训练）模型实现高效的文本到图像检索，专为Axera的NPU-based SoC平台（包括AX650、AX650C、AX8850和AX650A）或Axera专用AI加速器优化。
 
@@ -66,11 +66,10 @@ sudo apt install libopencv-dev build-essential
 ---
 ## 性能
 
-| Model | Input Shape |  Latency (ms) |
+| Model | Input Shape |  Latency (ms) | CMM Usage (MB) |
 |-------|------------|--------------|
-| cnclip_vit_l14_336px_vision_u16u8.axmodel | 1 x 3 x 336 x 336 |  88.475 ms |
-| cnclip_vit_l14_336px_text_u16.axmodel | 1 x 52 |  4.576 ms |
----
+| cnclip_vit_l14_336px_vision_u16u8.axmodel | 1 x 3 x 336 x 336 |  88.475 ms | 304 MB |
+| cnclip_vit_l14_336px_text_u16.axmodel | 1 x 52 |  4.576 ms | 122 MB |
 ---
 
 ## 使用示例
@@ -116,7 +115,16 @@ match text "dog"   8.86ms
 | 000000076417.jpg        |  0.04 |
 ```
 ---
+## Web demo
+```
+python gradio_example.py 
 
+* Running on local URL:  http://127.0.0.1:7860
+* To create a public link, set `share=True` in `launch()`.
+```
+![](pyclip/gradio_example.png)
+
+---
 ## 依赖项
 
 * [OpenCV](https://opencv.org/)
