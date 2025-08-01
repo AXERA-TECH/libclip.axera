@@ -16,6 +16,20 @@ protected:
     std::shared_ptr<CLIPTextEncoder> m_text_encoder;
     std::shared_ptr<CLIPImageEncoder> m_image_encoder;
 
+    static inline void fast_softmax_row(const std::vector<float> &row, std::vector<float> &out)
+    {
+        float maxVal = *std::max_element(row.begin(), row.end());
+        float sum = 0.0f;
+        out.resize(row.size());
+        for (size_t i = 0; i < row.size(); ++i)
+        {
+            out[i] = std::exp(row[i] - maxVal);
+            sum += out[i];
+        }
+        float invSum = 1.0f / sum;
+        for (auto &val : out)
+            val *= invSum;
+    }
     static void softmax(const std::vector<std::vector<float>> &input, std::vector<std::vector<float>> &output)
     {
         output.clear();
@@ -23,18 +37,8 @@ protected:
 
         for (const auto &row : input)
         {
-            float maxVal = *std::max_element(row.begin(), row.end());
             std::vector<float> expRow;
-            float sum = 0.0f;
-            for (float val : row)
-            {
-                float e = std::exp(val - maxVal); // 防止溢出
-                expRow.push_back(e);
-                sum += e;
-            }
-
-            for (float &val : expRow)
-                val /= sum;
+            fast_softmax_row(row, expRow);
 
             output.push_back(std::move(expRow));
         }

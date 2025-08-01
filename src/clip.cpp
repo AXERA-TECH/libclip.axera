@@ -10,6 +10,9 @@
 
 #include "CLIP.hpp"
 
+#include "leveldb/db.h"
+#include "leveldb/options.h"
+
 #include <queue>
 #include <cstring>
 #include <fstream>
@@ -159,6 +162,11 @@ struct clip_internal_handle_t
     CLIP m_clip;
     std::vector<std::string> m_keys;
     std::vector<std::vector<float>> m_image_features;
+
+    leveldb::DB *m_db;
+    leveldb::Options m_options;
+    leveldb::WriteOptions m_write_options;
+    leveldb::ReadOptions m_read_options;
 };
 
 clip_handle_t clip_create(clip_init_t *init_info)
@@ -212,6 +220,27 @@ clip_handle_t clip_create(clip_init_t *init_info)
         delete handle;
         return nullptr;
     }
+
+    handle->m_options.create_if_missing = true;
+    leveldb::Status status = leveldb::DB::Open(handle->m_options, init_info->db_path, &handle->m_db);
+    if (!status.ok())
+    {
+        printf("open db failed\n");
+        delete handle;
+        return nullptr;
+    }
+
+    auto it = handle->m_db->NewIterator(handle->m_read_options);
+    for (it->SeekToFirst(); it->Valid(); it->Next())
+    {
+        handle->m_keys.push_back(it->key().ToString());
+        std::vector<float> image_features;
+        image_features.resize(it->value().size() / sizeof(float));
+        memcpy(image_features.data(), it->value().data(), it->value().size());
+        handle->m_image_features.push_back(image_features);
+        printf("key: %s, value size: %ld\n", it->key().ToString().c_str(), it->value().size());
+    }
+
     return handle;
 }
 
@@ -225,7 +254,7 @@ int clip_destroy(clip_handle_t handle)
     return 0;
 }
 
-int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *image)
+int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *image, char overwrite)
 {
     clip_internal_handle_t *internal_handle = (clip_internal_handle_t *)handle;
     if (internal_handle == nullptr)
@@ -233,6 +262,19 @@ int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *ima
         printf("handle is null\n");
         return -1;
     }
+
+    if (!overwrite)
+    {
+        for (int i = 0; i < internal_handle->m_keys.size(); i++)
+        {
+            if (strcmp(internal_handle->m_keys[i].c_str(), key) == 0)
+            {
+                printf("key already exists\n");
+                return -1;
+            }
+        }
+    }
+
     std::vector<float> image_features;
     auto ret = internal_handle->m_clip.encode(image, image_features);
     if (!ret)
@@ -240,8 +282,17 @@ int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *ima
         printf("encode image failed\n");
         return -1;
     }
+
     internal_handle->m_keys.push_back(key);
     internal_handle->m_image_features.push_back(image_features);
+    leveldb::Slice key_slice(key);
+    leveldb::Slice value_slice((char *)image_features.data(), image_features.size() * sizeof(float));
+    leveldb::Status status = internal_handle->m_db->Put(internal_handle->m_write_options, key_slice, value_slice);
+    if (!status.ok())
+    {
+        printf("put db failed\n");
+        return -1;
+    }
     return 0;
 }
 
@@ -269,6 +320,31 @@ int clip_remove(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN])
     }
     internal_handle->m_keys.erase(internal_handle->m_keys.begin() + index);
     internal_handle->m_image_features.erase(internal_handle->m_image_features.begin() + index);
+    leveldb::Slice key_slice(key);
+    leveldb::Status status = internal_handle->m_db->Delete(internal_handle->m_write_options, key_slice);
+    if (!status.ok())
+    {
+        printf("delete db failed\n");
+        return -1;
+    }
+    return 0;
+}
+
+int clip_contain(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN])
+{
+    clip_internal_handle_t *internal_handle = (clip_internal_handle_t *)handle;
+    if (internal_handle == nullptr)
+    {
+        printf("handle is null\n");
+        return -1;
+    }
+    for (int i = 0; i < internal_handle->m_keys.size(); i++)
+    {
+        if (strcmp(internal_handle->m_keys[i].c_str(), key) == 0)
+        {
+            return 1;
+        }
+    }
     return 0;
 }
 

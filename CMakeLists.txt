@@ -8,6 +8,13 @@ endif()
 
 project(libclip)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+set(LEVELDB_BUILD_TESTS OFF)
+set(LEVELDB_BUILD_BENCHMARKS OFF)
+set(LEVELDB_INSTALL OFF)
+add_subdirectory(third-party/leveldb)
+include_directories(third-party/leveldb/include)
 
 message(STATUS "OpenCV_DIR Path: ${OpenCV_DIR}")
 find_package(OpenCV REQUIRED)
@@ -27,7 +34,7 @@ add_library(clip SHARED
     src/utils/enum_devices.cpp
 )
 
-target_link_libraries(clip ${OpenCV_LIBS} dl pthread)
+target_link_libraries(clip ${OpenCV_LIBS} leveldb dl pthread)
 
 function(build_test test_name)
     add_executable(${test_name} tests/${test_name}.cpp)
@@ -39,3 +46,8 @@ build_test(test_axcl_api)
 build_test(test_enum_devices)
 build_test(test_load_model)
 build_test(test_match_by_text)
+
+install(TARGETS clip
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include)

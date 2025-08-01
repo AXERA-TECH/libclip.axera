@@ -87,8 +87,9 @@ extern "C"
     clip_handle_t clip_create(clip_init_t *init_info);
     int clip_destroy(clip_handle_t handle);
 
-    int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *image);
+    int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *image, char overwrite);
     int clip_remove(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN]);
+    int clip_contain(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN]);
 
     int clip_match_text(clip_handle_t handle, const char *text, clip_result_item_t *results, int top_k);
     int clip_match_image(clip_handle_t handle, clip_image_t *image, clip_result_item_t *results, int top_k);
