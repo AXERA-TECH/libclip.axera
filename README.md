@@ -71,7 +71,7 @@ sudo apt install libopencv-dev build-essential
 ## Performance
 
 | Model | Input Shape |  Latency (ms) | CMM Usage (MB) |
-|-------|------------|--------------|
+|-------|------------|--------------|------------|
 | cnclip_vit_l14_336px_vision_u16u8.axmodel | 1 x 3 x 336 x 336 |  88.475 ms | 304 MB |
 | cnclip_vit_l14_336px_text_u16.axmodel | 1 x 52 |  4.576 ms | 122 MB |
 ---
