@@ -2,9 +2,31 @@ import ctypes
 import os
 from typing import List, Tuple, Optional
 import numpy as np
+import platform
 
-# 加载共享库
-_lib = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'libclip.so'))
+base_dir = os.path.dirname(__file__)
+
+arch = platform.machine() 
+
+if arch == 'x86_64':
+    arch_dir = 'x86_64'
+elif arch in ('aarch64', 'arm64'):
+    arch_dir = 'aarch64'
+else:
+    raise RuntimeError(f"Unsupported architecture: {arch}")
+
+lib_paths = [os.path.join(base_dir, arch_dir, 'libclip.so'),
+             os.path.join(base_dir, 'libclip.so')]
+
+for lib_path in lib_paths:
+    try:
+        _lib = ctypes.CDLL(lib_path)
+        break
+    except OSError:
+        continue
+else:
+    raise RuntimeError("Failed to load libclip.so")
+
 
 # 定义枚举类型
 class ClipDeviceType(ctypes.c_int):
