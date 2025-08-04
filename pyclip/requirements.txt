@@ -1,0 +1,4 @@
+gradio
+opencv-python
+tqdm
+Pillow

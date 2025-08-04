@@ -83,6 +83,11 @@ sudo apt install libopencv-dev build-essential
 
 ## 使用示例
 
+### 获取模型
+[clip](https://huggingface.co/AXERA-TECH/clip)
+
+[cnclip](https://huggingface.co/AXERA-TECH/cnclip)
+
 ### 在x86上（用于开发/测试）
 
 ```bash
@@ -124,11 +129,12 @@ match text "dog"   8.86ms
 | 000000076417.jpg        |  0.04 |
 ```
 ---
-## Web demo
+### Web demo（`make install` 之后使用）
 ```
-python gradio_example.py 
+pip install -r requirements.txt
+python gradio_example.py --ienc cnclip/cnclip_vit_l14_336px_vision_u16u8.axmodel --tenc cnclip/cnclip_vit_l14_336px_text_u16.axmodel --vocab cnclip/cn_vocab.txt --isCN 1 --db_path clip_feat_db_coco --image_folder coco_1000/
 
-* Running on local URL:  http://127.0.0.1:7860
+* Running on local URL:  http://0.0.0.0:7860
 * To create a public link, set `share=True` in `launch()`.
 ```
 ![](pyclip/gradio_example.png)
@@ -144,8 +150,9 @@ python gradio_example.py
 
 本项目基于以下开源组件：
 
-* [Chinese-CLIP](https://github.com/OFA-Sys/Chinese-CLIP)：一个多语言CLIP模型，在中文文本-图像检索任务中表现出色。
-* [LevelDB](https://github.com/google/leveldb)：一个快速的键值存储库，用于存储图像特征。
+* [CLIP](https://github.com/openai/CLIP): 一个多模态模型，能够同时处理文本和图像。
+* [Chinese-CLIP](https://github.com/OFA-Sys/Chinese-CLIP): 一个中文CLIP模型，在中文文本-图像检索任务中表现出色。
+* [LevelDB](https://github.com/google/leveldb): 一个快速的键值存储库，用于存储图像特征。
 
 ---
 

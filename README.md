@@ -85,6 +85,11 @@ sudo apt install libopencv-dev build-essential
 
 ## Usage Example
 
+### Get model
+[clip](https://huggingface.co/AXERA-TECH/clip)
+
+[cnclip](https://huggingface.co/AXERA-TECH/cnclip)
+
 ### On x86 (for development/testing)
 
 ```bash
@@ -129,11 +134,12 @@ match text "dog"   8.86ms
 
 ---
 
-## Web demo
+### Web demo(After `make install`)
 ```
-python gradio_example.py 
+pip install -r requirements.txt
+python gradio_example.py --ienc cnclip/cnclip_vit_l14_336px_vision_u16u8.axmodel --tenc cnclip/cnclip_vit_l14_336px_text_u16.axmodel --vocab cnclip/cn_vocab.txt --isCN 1 --db_path clip_feat_db_coco --image_folder coco_1000/
 
-* Running on local URL:  http://127.0.0.1:7860
+* Running on local URL:  http://0.0.0.0:7860
 * To create a public link, set `share=True` in `launch()`.
 ```
 ![](pyclip/gradio_example.png)
@@ -147,8 +153,8 @@ python gradio_example.py
 ## References
 
 This project is based on the following open-source components:
-
-* [Chinese-CLIP](https://github.com/OFA-Sys/Chinese-CLIP): A multilingual CLIP model with strong performance in Chinese text-image retrieval tasks.
+* [CLIP](https://github.com/openai/CLIP): A multimodal model that can process both text and images.
+* [Chinese-CLIP](https://github.com/OFA-Sys/Chinese-CLIP): A Chinese CLIP model with strong performance in Chinese text-image retrieval tasks.
 * [LevelDB](https://github.com/google/leveldb): A fast key-value storage library used for storing image features.
 
 ---
