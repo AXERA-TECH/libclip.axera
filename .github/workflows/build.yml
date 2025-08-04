@@ -30,6 +30,10 @@ jobs:
           git submodule update --init
 
       # Runs a set of commands using the runners shell
+      - name: build in host
+        run: |
+          sh ./build.sh
+      
       - name: build cross compiler
         run: |
           sh ./build_aarch64.sh
