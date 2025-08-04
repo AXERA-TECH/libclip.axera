@@ -64,10 +64,19 @@ sudo apt install libopencv-dev build-essential
 ./build.sh
 ```
 ---
+## CI 状态
+
+| Architecture | Status |
+|--------------|--------|
+| x86          | ![x86 Build](https://github.com/AXERA-TECH/libclip.axera/actions/workflows/build.yml/badge.svg?branch=main&label=x86&job=build-x86) |
+| aarch64      | ![aarch64 Build](https://github.com/AXERA-TECH/libclip.axera/actions/workflows/build.yml/badge.svg?branch=main&label=aarch64&job=build-aarch64) |
+
+
+---
 ## 性能
 
 | Model | Input Shape |  Latency (ms) | CMM Usage (MB) |
-|-------|------------|--------------|
+|-------|------------|--------------|--------------|
 | cnclip_vit_l14_336px_vision_u16u8.axmodel | 1 x 3 x 336 x 336 |  88.475 ms | 304 MB |
 | cnclip_vit_l14_336px_text_u16.axmodel | 1 x 52 |  4.576 ms | 122 MB |
 ---

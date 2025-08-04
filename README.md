@@ -66,6 +66,13 @@ cd libclip.axera
 sudo apt install libopencv-dev build-essential
 ./build.sh
 ```
+---
+## CI Status
+
+| Architecture | Status |
+|--------------|--------|
+| x86          | ![x86 Build](https://github.com/AXERA-TECH/libclip.axera/actions/workflows/build.yml/badge.svg?branch=main&label=x86&job=build-x86) |
+| aarch64      | ![aarch64 Build](https://github.com/AXERA-TECH/libclip.axera/actions/workflows/build.yml/badge.svg?branch=main&label=aarch64&job=build-aarch64) |
 
 ---
 ## Performance

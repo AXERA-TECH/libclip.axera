@@ -88,14 +88,13 @@ extern "C"
 
     typedef struct
     {
-        clip_devive_e dev_type;
-        char devid;
-        char text_encoder_path[CLIP_PATH_LEN];
-        char image_encoder_path[CLIP_PATH_LEN];
-        char tokenizer_path[CLIP_PATH_LEN];
-        char isCN;
-
-        char db_path[CLIP_PATH_LEN];
+        clip_devive_e dev_type;                 // Device type
+        char devid;                             // axcl device ID
+        char text_encoder_path[CLIP_PATH_LEN];  // Text encoder model path
+        char image_encoder_path[CLIP_PATH_LEN]; // Image encoder model path
+        char tokenizer_path[CLIP_PATH_LEN];     // Tokenizer model path
+        char isCN;                              // Whether it's a Chinese model (0: English, 1: Chinese)
+        char db_path[CLIP_PATH_LEN];            // Database path (if empty path is specified, a folder will be created)
     } clip_init_t;
 
     typedef struct
@@ -113,19 +112,88 @@ extern "C"
         float score;
     } clip_result_item_t;
 
+    /**
+     * @brief Enumerate available devices in the current system
+     * @param devices Pointer to device information structure
+     * @return int Returns 0 on success, -1 on failure
+     */
     int clip_enum_devices(clip_devices_t *devices);
 
+    /**
+     * @brief Initialize CLIP system resources
+     * @param dev_type Device type
+     * @param devid Device ID
+     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+     */
     int clip_sys_init(clip_devive_e dev_type, char devid);
+
+    /**
+     * @brief Deinitialize CLIP system resources
+     * @param dev_type Device type
+     * @param devid Device ID
+     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+     */
     int clip_sys_deinit(clip_devive_e dev_type, char devid);
 
+    /**
+     * @brief Create CLIP handle
+     * @param init_info Pointer to initialization information structure
+     * @param handle Handle pointer
+     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+     */
     int clip_create(clip_init_t *init_info, clip_handle_t *handle);
+
+    /**
+     * @brief Destroy CLIP handle
+     * @param handle Handle
+     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+     */
     int clip_destroy(clip_handle_t handle);
 
+    /**
+     * @brief Add image to CLIP database
+     * @param handle Handle
+     * @param key Image key
+     * @param image Pointer to image structure
+     * @param overwrite Whether to overwrite
+     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+     */
     int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *image, char overwrite);
+
+    /**
+     * @brief Remove image from CLIP database
+     * @param handle Handle
+     * @param key Image key
+     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+     */
     int clip_remove(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN]);
+
+    /**
+     * @brief Check if image exists in CLIP database
+     * @param handle Handle
+     * @param key Image key
+     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+     */
     int clip_contain(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN]);
 
+    /**
+     * @brief Text match CLIP database images (softmax)
+     * @param handle Handle
+     * @param text Text
+     * @param results Pointer to result structure
+     * @param top_k Top k results
+     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+     */
     int clip_match_text(clip_handle_t handle, const char *text, clip_result_item_t *results, int top_k);
+
+    /**
+     * @brief Image match CLIP database images (cosine similarity)
+     * @param handle Handle
+     * @param image Pointer to image structure
+     * @param results Pointer to result structure
+     * @param top_k Top k results
+     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+     */
     int clip_match_image(clip_handle_t handle, clip_image_t *image, clip_result_item_t *results, int top_k);
 
 #if defined(__cplusplus)
