@@ -79,8 +79,8 @@ _lib.clip_sys_init.restype = ctypes.c_int
 _lib.clip_sys_deinit.argtypes = [ClipDeviceType, ctypes.c_char]
 _lib.clip_sys_deinit.restype = ctypes.c_int
 
-_lib.clip_create.argtypes = [ctypes.POINTER(ClipInit)]
-_lib.clip_create.restype = ctypes.c_void_p
+_lib.clip_create.argtypes = [ctypes.POINTER(ClipInit), ctypes.POINTER(ctypes.c_void_p)]
+_lib.clip_create.restype = ctypes.c_int
 
 _lib.clip_destroy.argtypes = [ctypes.c_void_p]
 _lib.clip_destroy.restype = ctypes.c_int
@@ -123,9 +123,9 @@ class Clip:
                 setattr(self.init_info, path_name, init_info[path_name].encode('utf-8'))
         
         # 创建CLIP实例
-        self.handle = _lib.clip_create(ctypes.byref(self.init_info))
-        if not self.handle:
-            raise ClipError("创建CLIP实例失败")
+        handle = ctypes.c_void_p()
+        check_error(_lib.clip_create(ctypes.byref(self.init_info), ctypes.byref(handle)))
+        self.handle = handle
 
     def __del__(self):
         if self.handle:
@@ -133,7 +133,6 @@ class Clip:
 
     def add_image(self, key: str, image_data: np.ndarray) -> None:
         if self.contains_image(key):
-            # print(f"图像 {key} 已存在")
             return
         image = ClipImage()
         image.data = ctypes.cast(image_data.ctypes.data, ctypes.POINTER(ctypes.c_ubyte))

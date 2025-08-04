@@ -12,6 +12,40 @@ extern "C"
 
     typedef enum
     {
+        clip_errcode_failed = -1,
+        clip_errcode_success = 0,
+
+        clip_errcode_invalid_ptr,
+        clip_errcode_sysinit_failed,
+        clip_errcode_sysdeinit_failed,
+        clip_errcode_axcl_sysinit_failed,
+        clip_errcode_axcl_sysdeinit_failed,
+
+        clip_errcode_create_failed = 0x10000,
+        clip_errcode_create_failed_sys,
+        clip_errcode_create_failed_ienc,
+        clip_errcode_create_failed_tenc,
+        clip_errcode_create_failed_vocab,
+        clip_errcode_create_failed_db,
+
+        clip_errcode_destroy_failed = 0x20000,
+
+        clip_errcode_add_failed = 0x30000,
+        clip_errcode_add_failed_key_exist,
+        clip_errcode_add_failed_encode_image,
+        clip_errcode_add_failed_push_db,
+
+        clip_errcode_remove_failed = 0x40000,
+        clip_errcode_remove_failed_key_not_exist,
+        clip_errcode_remove_failed_del_db,
+
+        clip_errcode_match_failed = 0x50000,
+        clip_errcode_match_failed_encode_text,
+        clip_errcode_match_failed_encode_image,
+    } clip_errcode_e;
+
+    typedef enum
+    {
         unknown_device = 0,
         host_device = 1,
         axcl_device = 2
@@ -84,7 +118,7 @@ extern "C"
     int clip_sys_init(clip_devive_e dev_type, char devid);
     int clip_sys_deinit(clip_devive_e dev_type, char devid);
 
-    clip_handle_t clip_create(clip_init_t *init_info);
+    int clip_create(clip_init_t *init_info, clip_handle_t *handle);
     int clip_destroy(clip_handle_t handle);
 
     int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *image, char overwrite);

@@ -73,7 +73,7 @@ int clip_sys_init(clip_devive_e dev_type, char devid)
             if (ret != 0)
             {
                 printf("AX_SYS_Init failed\n");
-                return -1;
+                return clip_errcode_sysinit_failed;
             }
             AX_ENGINE_NPU_ATTR_T npu_attr;
             memset(&npu_attr, 0, sizeof(AX_ENGINE_NPU_ATTR_T));
@@ -82,14 +82,14 @@ int clip_sys_init(clip_devive_e dev_type, char devid)
             if (ret != 0)
             {
                 printf("AX_ENGINE_Init failed\n");
-                return -1;
+                return clip_errcode_sysinit_failed;
             }
-            return 0;
+            return clip_errcode_success;
         }
         else
         {
             printf("axsys or axengine not init\n");
-            return -1;
+            return clip_errcode_sysinit_failed;
         }
     }
     else if (dev_type == clip_devive_e::axcl_device)
@@ -97,17 +97,17 @@ int clip_sys_init(clip_devive_e dev_type, char devid)
         if (!getLoader().is_init())
         {
             printf("unsupport axcl\n");
-            return -1;
+            return clip_errcode_axcl_sysinit_failed;
         }
         auto ret = axcl_Dev_Init(devid);
         if (ret != 0)
         {
             printf("axcl_Dev_Init failed\n");
-            return -1;
+            return clip_errcode_axcl_sysinit_failed;
         }
-        return 0;
+        return clip_errcode_success;
     }
-    return -1;
+    return clip_errcode_sysinit_failed;
 }
 
 int clip_sys_deinit(clip_devive_e dev_type, char devid)
@@ -122,15 +122,15 @@ int clip_sys_deinit(clip_devive_e dev_type, char devid)
             if (ret != 0)
             {
                 printf("AX_ENGINE_Deinit failed\n");
-                return -1;
+                return clip_errcode_sysdeinit_failed;
             }
             ret = ax_sys_loader.AX_SYS_Deinit();
             if (ret != 0)
             {
                 printf("AX_SYS_Deinit failed\n");
-                return -1;
+                return clip_errcode_sysdeinit_failed;
             }
-            return 0;
+            return clip_errcode_success;
         }
         else
         {
@@ -143,18 +143,18 @@ int clip_sys_deinit(clip_devive_e dev_type, char devid)
         if (!getLoader().is_init())
         {
             printf("unsupport axcl\n");
-            return -1;
+            return clip_errcode_axcl_sysdeinit_failed;
         }
         auto ret = axcl_Dev_Exit(devid);
         if (ret != 0)
         {
             printf("axcl_Dev_Exit failed\n");
-            return -1;
+            return clip_errcode_axcl_sysdeinit_failed;
         }
 
-        return 0;
+        return clip_errcode_success;
     }
-    return 0;
+    return clip_errcode_sysdeinit_failed;
 }
 
 struct clip_internal_handle_t
@@ -169,14 +169,14 @@ struct clip_internal_handle_t
     leveldb::ReadOptions m_read_options;
 };
 
-clip_handle_t clip_create(clip_init_t *init_info)
+int clip_create(clip_init_t *init_info, clip_handle_t *_handle)
 {
     if (init_info->dev_type == clip_devive_e::host_device)
     {
         if (!get_ax_sys_loader().is_init() || !get_ax_engine_loader().is_init())
         {
             printf("axsys or axengine not init\n");
-            return nullptr;
+            return clip_errcode_create_failed_sys;
         }
     }
     else if (init_info->dev_type == clip_devive_e::axcl_device)
@@ -184,18 +184,18 @@ clip_handle_t clip_create(clip_init_t *init_info)
         if (!getLoader().is_init())
         {
             printf("unsupport axcl\n");
-            return nullptr;
+            return clip_errcode_create_failed_sys;
         }
 
         if (!axcl_Dev_IsInit(init_info->devid))
         {
             printf("axcl device %d not init\n", init_info->devid);
-            return nullptr;
+            return clip_errcode_create_failed_sys;
         }
     }
     else
     {
-        return nullptr;
+        return clip_errcode_failed;
     }
 
     clip_internal_handle_t *handle = new clip_internal_handle_t;
@@ -204,30 +204,30 @@ clip_handle_t clip_create(clip_init_t *init_info)
     {
         printf("load image encoder failed\n");
         delete handle;
-        return nullptr;
+        return clip_errcode_create_failed_ienc;
     }
     ret = handle->m_clip.load_text_encoder(init_info);
     if (!ret)
     {
         printf("load text encoder failed\n");
         delete handle;
-        return nullptr;
+        return clip_errcode_create_failed_tenc;
     }
     ret = handle->m_clip.load_tokenizer(init_info->tokenizer_path, init_info->isCN);
     if (!ret)
     {
         printf("load tokenizer failed\n");
         delete handle;
-        return nullptr;
+        return clip_errcode_create_failed_vocab;
     }
 
     handle->m_options.create_if_missing = true;
     leveldb::Status status = leveldb::DB::Open(handle->m_options, init_info->db_path, &handle->m_db);
     if (!status.ok())
     {
-        printf("open db failed\n");
+        printf("open db failed, status: %s\n", status.ToString().c_str());
         delete handle;
-        return nullptr;
+        return clip_errcode_create_failed_db;
     }
 
     auto it = handle->m_db->NewIterator(handle->m_read_options);
@@ -240,8 +240,8 @@ clip_handle_t clip_create(clip_init_t *init_info)
         handle->m_image_features.push_back(image_features);
         // printf("key: %s, value size: %ld\n", it->key().ToString().c_str(), it->value().size());
     }
-
-    return handle;
+    *_handle = handle;
+    return clip_errcode_success;
 }
 
 int clip_destroy(clip_handle_t handle)
@@ -251,7 +251,7 @@ int clip_destroy(clip_handle_t handle)
     {
         delete internal_handle;
     }
-    return 0;
+    return clip_errcode_success;
 }
 
 int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *image, char overwrite)
@@ -260,7 +260,7 @@ int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *ima
     if (internal_handle == nullptr)
     {
         printf("handle is null\n");
-        return -1;
+        return clip_errcode_invalid_ptr;
     }
 
     if (!overwrite)
@@ -270,7 +270,7 @@ int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *ima
             if (strcmp(internal_handle->m_keys[i].c_str(), key) == 0)
             {
                 printf("key already exists\n");
-                return -1;
+                return clip_errcode_add_failed_key_exist;
             }
         }
     }
@@ -280,7 +280,7 @@ int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *ima
     if (!ret)
     {
         printf("encode image failed\n");
-        return -1;
+        return clip_errcode_add_failed_encode_image;
     }
 
     internal_handle->m_keys.push_back(key);
@@ -290,10 +290,10 @@ int clip_add(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN], clip_image_t *ima
     leveldb::Status status = internal_handle->m_db->Put(internal_handle->m_write_options, key_slice, value_slice);
     if (!status.ok())
     {
-        printf("put db failed\n");
-        return -1;
+        printf("put db failed, status: %s\n", status.ToString().c_str());
+        return clip_errcode_add_failed_push_db;
     }
-    return 0;
+    return clip_errcode_success;
 }
 
 int clip_remove(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN])
@@ -302,7 +302,7 @@ int clip_remove(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN])
     if (internal_handle == nullptr)
     {
         printf("handle is null\n");
-        return -1;
+        return clip_errcode_invalid_ptr;
     }
     int index = -1;
     for (int i = 0; i < internal_handle->m_keys.size(); i++)
@@ -316,7 +316,7 @@ int clip_remove(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN])
     if (index == -1)
     {
         printf("key not found\n");
-        return -1;
+        return clip_errcode_remove_failed_key_not_exist;
     }
     internal_handle->m_keys.erase(internal_handle->m_keys.begin() + index);
     internal_handle->m_image_features.erase(internal_handle->m_image_features.begin() + index);
@@ -324,10 +324,10 @@ int clip_remove(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN])
     leveldb::Status status = internal_handle->m_db->Delete(internal_handle->m_write_options, key_slice);
     if (!status.ok())
     {
-        printf("delete db failed\n");
-        return -1;
+        printf("delete db failed, status: %s\n", status.ToString().c_str());
+        return clip_errcode_remove_failed_del_db;
     }
-    return 0;
+    return clip_errcode_success;
 }
 
 int clip_contain(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN])
@@ -336,7 +336,7 @@ int clip_contain(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN])
     if (internal_handle == nullptr)
     {
         printf("handle is null\n");
-        return -1;
+        return clip_errcode_invalid_ptr;
     }
     for (int i = 0; i < internal_handle->m_keys.size(); i++)
     {
@@ -410,7 +410,7 @@ int clip_match_text(clip_handle_t handle, const char *text, clip_result_item_t *
     if (internal_handle == nullptr)
     {
         printf("handle is null\n");
-        return -1;
+        return clip_errcode_invalid_ptr;
     }
     std::vector<std::vector<float>> text_features;
     std::vector<std::string> texts = {text};
@@ -418,7 +418,7 @@ int clip_match_text(clip_handle_t handle, const char *text, clip_result_item_t *
     if (!ret)
     {
         printf("encode text failed\n");
-        return -1;
+        return clip_errcode_match_failed_encode_text;
     }
     std::vector<std::vector<float>> logits_per_image;
     std::vector<std::vector<float>> logits_per_text;
@@ -428,7 +428,7 @@ int clip_match_text(clip_handle_t handle, const char *text, clip_result_item_t *
 
     get_top_k_results(scores, internal_handle->m_keys, results, top_k);
 
-    return 0;
+    return clip_errcode_success;
 }
 
 int clip_match_image(clip_handle_t handle, clip_image_t *image, clip_result_item_t *results, int top_k)
@@ -438,14 +438,14 @@ int clip_match_image(clip_handle_t handle, clip_image_t *image, clip_result_item
     if (internal_handle == nullptr)
     {
         printf("handle is null\n");
-        return -1;
+        return clip_errcode_invalid_ptr;
     }
     std::vector<float> image_features;
     auto ret = internal_handle->m_clip.encode(image, image_features);
     if (!ret)
     {
         printf("encode image failed\n");
-        return -1;
+        return clip_errcode_match_failed_encode_image;
     }
 
     std::vector<float> scores;
@@ -463,5 +463,5 @@ int clip_match_image(clip_handle_t handle, clip_image_t *image, clip_result_item
 
     get_top_k_results(scores, internal_handle->m_keys, results, top_k);
 
-    return 0;
+    return clip_errcode_success;
 }

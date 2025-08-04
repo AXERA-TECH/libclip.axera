@@ -31,9 +31,9 @@ int main(int argc, char *argv[])
     memset(&init_info, 0, sizeof(init_info));
 
     cmdline::parser parser;
-    parser.add<std::string>("ienc", 0, "encoder model(onnx model or axmodel)", false, "/home/axera/CLIP-ONNX-AX650-CPP/build/cnclip/cnclip_vit_l14_336px_vision_u16u8.axmodel");
-    parser.add<std::string>("tenc", 0, "text encoder model(onnx model or axmodel)", false, "/home/axera/CLIP-ONNX-AX650-CPP/build/cnclip/cnclip_vit_l14_336px_text_u16.axmodel");
-    parser.add<std::string>("vocab", 'v', "vocab path", false, "/home/axera/CLIP-ONNX-AX650-CPP/cn_vocab.txt");
+    parser.add<std::string>("ienc", 0, "encoder model(onnx model or axmodel)", true, "cnclip/cnclip_vit_l14_336px_vision_u16u8.axmodel");
+    parser.add<std::string>("tenc", 0, "text encoder model(onnx model or axmodel)", true, "cnclip/cnclip_vit_l14_336px_text_u16.axmodel");
+    parser.add<std::string>("vocab", 'v', "vocab path", true, "cnclip/cn_vocab.txt");
     parser.add<int>("language", 'l', "language choose, 0:english 1:chinese", false, 1);
     parser.add<std::string>("db_path", 'd', "db path", false, "");
     parser.parse_check(argc, argv);
@@ -60,7 +60,13 @@ int main(int argc, char *argv[])
         init_info.devid = 0;
     }
 
-    auto handle = clip_create(&init_info);
+    clip_handle_t handle;
+    int ret = clip_create(&init_info, &handle);
+    if (ret != clip_errcode_success)
+    {
+        printf("clip_create failed\n");
+        return -1;
+    }
 
     clip_destroy(handle);
 

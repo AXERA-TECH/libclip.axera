@@ -65,10 +65,11 @@ int main(int argc, char *argv[])
         init_info.devid = 0;
     }
 
-    auto handle = clip_create(&init_info);
-    if (handle == nullptr)
+    clip_handle_t handle;
+    int ret = clip_create(&init_info, &handle);
+    if (ret != clip_errcode_success)
     {
-        printf("create clip handle failed\n");
+        printf("clip_create failed\n");
         return -1;
     }
 

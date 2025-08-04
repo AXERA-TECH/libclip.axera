@@ -15,7 +15,7 @@ int main()
     axcl_Dev_Init(0);
 
     ax_runner_axcl runner;
-    std::ifstream file("/home/axera/CLIP-ONNX-AX650-CPP/build/cnclip/cnclip_vit_l14_336px_text_u16.axmodel", std::ios::binary);
+    std::ifstream file("cnclip/cnclip_vit_l14_336px_text_u16.axmodel", std::ios::binary);
     if (!file.is_open())
     {
         printf("open file failed\n");

@@ -22,7 +22,7 @@ int main()
     ax_engine_loader.AX_ENGINE_Init(&npu_attr);
 
     ax_runner_ax650 runner;
-    std::ifstream file("/home/axera/CLIP-ONNX-AX650-CPP/build/cnclip/cnclip_vit_l14_336px_text_u16.axmodel", std::ios::binary);
+    std::ifstream file("cnclip/cnclip_vit_l14_336px_text_u16.axmodel", std::ios::binary);
     if (!file.is_open())
     {
         printf("open file failed\n");

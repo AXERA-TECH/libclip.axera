@@ -23,8 +23,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(include)
 include_directories(src)
 include_directories(src/utils)
-
-include_directories(/usr/include/axcl)
+include_directories(src/runner/ax_type_header)
 
 add_library(clip SHARED
     src/clip.cpp
@@ -48,6 +47,8 @@ build_test(test_load_model)
 build_test(test_match_by_text)
 
 install(TARGETS clip
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SYSTEM_PROCESSOR}
 )
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(DIRECTORY pyclip/ DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(DIRECTORY tests/ DESTINATION ${CMAKE_INSTALL_PREFIX}/examples)
