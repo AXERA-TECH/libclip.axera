@@ -65,6 +65,11 @@ cmake -DCMAKE_TOOLCHAIN_FILE=../toolchains/aarch64-none-linux-gnu.toolchain.cmak
 -DCMAKE_BUILD_TYPE=Release \
 ..
 
+cmake -DCMAKE_TOOLCHAIN_FILE=../toolchains/aarch64-none-linux-gnu.toolchain.cmake \
+-DOpenCV_DIR=$PWD/libopencv-4.5.5-aarch64/lib/cmake/opencv4 \
+-DCMAKE_BUILD_TYPE=Release \
+..
+
 
 make -j16
 make install
