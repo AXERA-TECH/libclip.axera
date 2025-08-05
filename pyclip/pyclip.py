@@ -20,7 +20,7 @@ lib_paths = [
 ]
 
 last_error = None
-printed_diagnostics = set()
+diagnostic_shown = set()
 
 for lib_path in lib_paths:
     try:
@@ -34,21 +34,26 @@ for lib_path in lib_paths:
         print(f"\n❌ Failed to load: {lib_path}")
         print(f"   {err_str}")
 
-        # Deduplicate diagnostics
-        if err_str not in printed_diagnostics:
-            printed_diagnostics.add(err_str)
-
-            if "GLIBCXX" in err_str and "not found" in err_str:
+        # Only show GLIBCXX tip once
+        if "GLIBCXX" in err_str and "not found" in err_str:
+            if "missing_glibcxx" not in diagnostic_shown:
+                diagnostic_shown.add("missing_glibcxx")
                 print("🔍 Detected missing GLIBCXX version in libstdc++.so.6")
                 print("💡 This usually happens when your environment (like Conda) uses an older libstdc++")
                 print(f"👉 Try running with system libstdc++ preloaded:")
                 print(f"   export LD_PRELOAD=/usr/lib/{arch_dir}-linux-gnu/libstdc++.so.6\n")
-            elif "No such file" in err_str:
+        elif "No such file" in err_str:
+            if "file_not_found" not in diagnostic_shown:
+                diagnostic_shown.add("file_not_found")
                 print("🔍 File not found. Please verify that libclip.so exists and the path is correct.\n")
-            elif "wrong ELF class" in err_str:
+        elif "wrong ELF class" in err_str:
+            if "elf_mismatch" not in diagnostic_shown:
+                diagnostic_shown.add("elf_mismatch")
                 print("🔍 ELF class mismatch — likely due to architecture conflict (e.g., loading x86_64 .so on aarch64).")
                 print(f"👉 Run `file {lib_path}` to verify the binary architecture.\n")
-            else:
+        else:
+            if "generic_error" not in diagnostic_shown:
+                diagnostic_shown.add("generic_error")
                 print("📎 Tip: Use `ldd` to inspect missing dependencies:")
                 print(f"   ldd {lib_path}\n")
 else:
