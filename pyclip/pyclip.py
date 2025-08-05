@@ -228,7 +228,7 @@ def enum_devices() -> dict:
     
     return {
         'host': {
-            'available': bool(devices.host.available),
+            'available': bool(devices.host.available[0]),
             'version': devices.host.version.decode('utf-8'),
             'mem_info': {
                 'remain': devices.host.mem_info.remain,

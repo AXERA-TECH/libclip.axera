@@ -20,8 +20,16 @@ if __name__ == '__main__':
     image_folder = args.image_folder
 
     # 初始化
-    print("可用设备:", enum_devices())
-    sys_init(ClipDeviceType.axcl_device, 0)
+    devices_info = enum_devices()
+    print("可用设备:", devices_info)
+    if devices_info['host']['available']:
+        print("host device available")
+        sys_init(ClipDeviceType.host_device, -1)
+    elif devices_info['devices']['count'] > 0:
+        print("axcl device available, use device-0")
+        sys_init(ClipDeviceType.axcl_device, 0)
+    else:
+        raise Exception("No available device")
 
     clip = Clip({
         'text_encoder_path': args.tenc,
@@ -42,7 +50,6 @@ if __name__ == '__main__':
         cv2.cvtColor(img, cv2.COLOR_BGR2RGB, img)
         clip.add_image(filename, img)
 
-    # 工具函数：图片转 base64
     def img_to_pil(img_path):
         return Image.open(img_path).convert("RGB")
 
@@ -75,6 +82,10 @@ if __name__ == '__main__':
     ip = "0.0.0.0"
     demo.launch(server_name=ip, server_port=7860)
 
-    # 关闭系统（你可加信号处理来自动关闭）
     import atexit
-    atexit.register(lambda: sys_deinit(ClipDeviceType.axcl_device, 0))
+    if devices_info['host']['available']:
+        atexit.register(lambda: sys_deinit(ClipDeviceType.host_device, -1))
+    elif devices_info['devices']['count'] > 0:
+        atexit.register(lambda: sys_deinit(ClipDeviceType.axcl_device, 0))
+    
+    

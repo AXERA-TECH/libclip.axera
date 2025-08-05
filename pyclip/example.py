@@ -18,10 +18,16 @@ if __name__ == '__main__':
     image_folder = args.image_folder
 
     # 枚举设备
-    print("可用设备:", enum_devices())
-
-    # 初始化系统
-    sys_init(ClipDeviceType.axcl_device, 0)
+    devices_info = enum_devices()
+    print("可用设备:", devices_info)
+    if devices_info['host']['available']:
+        print("host device available")
+        sys_init(ClipDeviceType.host_device, -1)
+    elif devices_info['devices']['count'] > 0:
+        print("axcl device available, use device-0")
+        sys_init(ClipDeviceType.axcl_device, 0)
+    else:
+        raise Exception("No available device")
 
     try:
         # 创建CLIP实例
@@ -48,4 +54,7 @@ if __name__ == '__main__':
 
     finally:
         # 反初始化系统
-        sys_deinit(ClipDeviceType.axcl_device, 0)
+        if devices_info['host']['available']:
+            sys_deinit(ClipDeviceType.host_device, -1)
+        elif devices_info['devices']['count'] > 0:
+            sys_deinit(ClipDeviceType.axcl_device, 0)
