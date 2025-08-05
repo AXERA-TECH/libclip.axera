@@ -20,6 +20,7 @@ lib_paths = [
 ]
 
 last_error = None
+printed_diagnostics = set()
 
 for lib_path in lib_paths:
     try:
@@ -29,26 +30,29 @@ for lib_path in lib_paths:
         break
     except OSError as e:
         last_error = e
-        print(f"\n❌ Failed to load {lib_path}:")
-        print(f"   {e}\n")
-
         err_str = str(e)
-        if "GLIBCXX" in err_str and "not found" in err_str:
-            print("🔍 Detected missing GLIBCXX version in libstdc++.so.6")
-            print("💡 This usually happens when your environment (like Conda) uses an older libstdc++")
-            print("👉 Try running the script with system libstdc++ preloaded:")
-            print(f"   export LD_PRELOAD=/usr/lib/{arch_dir}-linux-gnu/libstdc++.so.6")
-        elif "No such file" in err_str:
-            print("🔍 File not found. Please verify that libclip.so exists and the path is correct.")
-        elif "wrong ELF class" in err_str:
-            print("🔍 ELF class mismatch — likely due to architecture conflict (e.g., loading x86_64 .so on aarch64).")
-            print(f"👉 Run `file {lib_path}` to verify the binary architecture.")
-        else:
-            print("📎 Tip: Run the following command to inspect missing dependencies:")
-            print(f"   ldd {lib_path}")
+        print(f"\n❌ Failed to load: {lib_path}")
+        print(f"   {err_str}")
 
+        # Deduplicate diagnostics
+        if err_str not in printed_diagnostics:
+            printed_diagnostics.add(err_str)
+
+            if "GLIBCXX" in err_str and "not found" in err_str:
+                print("🔍 Detected missing GLIBCXX version in libstdc++.so.6")
+                print("💡 This usually happens when your environment (like Conda) uses an older libstdc++")
+                print(f"👉 Try running with system libstdc++ preloaded:")
+                print(f"   export LD_PRELOAD=/usr/lib/{arch_dir}-linux-gnu/libstdc++.so.6\n")
+            elif "No such file" in err_str:
+                print("🔍 File not found. Please verify that libclip.so exists and the path is correct.\n")
+            elif "wrong ELF class" in err_str:
+                print("🔍 ELF class mismatch — likely due to architecture conflict (e.g., loading x86_64 .so on aarch64).")
+                print(f"👉 Run `file {lib_path}` to verify the binary architecture.\n")
+            else:
+                print("📎 Tip: Use `ldd` to inspect missing dependencies:")
+                print(f"   ldd {lib_path}\n")
 else:
-    raise RuntimeError(f"\n❗ Failed to load libclip.so.\nLast error: {last_error}")
+    raise RuntimeError(f"\n❗ Failed to load libclip.so.\nLast error:\n{last_error}")
 
 
 # 定义枚举类型
