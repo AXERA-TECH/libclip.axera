@@ -172,7 +172,7 @@ extern "C"
      * @brief Check if image exists in CLIP database
      * @param handle Handle
      * @param key Image key
-     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+     * @return int Returns 1 if exists, 0 if not exists
      */
     int clip_contain(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN]);
 
