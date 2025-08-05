@@ -2,7 +2,7 @@ import os
 from pyclip import Clip, enum_devices, sys_init, sys_deinit, ClipDeviceType
 import cv2
 import glob
-import numpy as np
+import argparse
 import tqdm
 
 if __name__ == '__main__':

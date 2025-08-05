@@ -5,8 +5,7 @@ import numpy as np
 import platform
 
 base_dir = os.path.dirname(__file__)
-
-arch = platform.machine() 
+arch = platform.machine()
 
 if arch == 'x86_64':
     arch_dir = 'x86_64'
@@ -15,17 +14,41 @@ elif arch in ('aarch64', 'arm64'):
 else:
     raise RuntimeError(f"Unsupported architecture: {arch}")
 
-lib_paths = [os.path.join(base_dir, arch_dir, 'libclip.so'),
-             os.path.join(base_dir, 'libclip.so')]
+lib_paths = [
+    os.path.join(base_dir, arch_dir, 'libclip.so'),
+    os.path.join(base_dir, 'libclip.so')
+]
+
+last_error = None
 
 for lib_path in lib_paths:
     try:
+        print(f"Trying to load: {lib_path}")
         _lib = ctypes.CDLL(lib_path)
+        print(f"✅ Successfully loaded: {lib_path}")
         break
-    except OSError:
-        continue
+    except OSError as e:
+        last_error = e
+        print(f"\n❌ Failed to load {lib_path}:")
+        print(f"   {e}\n")
+
+        err_str = str(e)
+        if "GLIBCXX" in err_str and "not found" in err_str:
+            print("🔍 Detected missing GLIBCXX version in libstdc++.so.6")
+            print("💡 This usually happens when your environment (like Conda) uses an older libstdc++")
+            print("👉 Try running the script with system libstdc++ preloaded:")
+            print(f"   export LD_PRELOAD=/usr/lib/{arch_dir}-linux-gnu/libstdc++.so.6")
+        elif "No such file" in err_str:
+            print("🔍 File not found. Please verify that libclip.so exists and the path is correct.")
+        elif "wrong ELF class" in err_str:
+            print("🔍 ELF class mismatch — likely due to architecture conflict (e.g., loading x86_64 .so on aarch64).")
+            print(f"👉 Run `file {lib_path}` to verify the binary architecture.")
+        else:
+            print("📎 Tip: Run the following command to inspect missing dependencies:")
+            print(f"   ldd {lib_path}")
+
 else:
-    raise RuntimeError("Failed to load libclip.so")
+    raise RuntimeError(f"\n❗ Failed to load libclip.so.\nLast error: {last_error}")
 
 
 # 定义枚举类型
