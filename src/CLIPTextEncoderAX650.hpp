@@ -16,7 +16,7 @@ public:
     {
         MMap text_mmap(init_info->text_encoder_path);
 
-        if (init_info->dev_type == clip_devive_e::host_device)
+        if (init_info->dev_type == ax_devive_e::host_device)
         {
 
             m_encoder = std::make_shared<ax_runner_ax650>();
@@ -28,7 +28,7 @@ public:
                 return false;
             }
         }
-        else if (init_info->dev_type == clip_devive_e::axcl_device)
+        else if (init_info->dev_type == ax_devive_e::axcl_device)
         {
             m_encoder = std::make_shared<ax_runner_axcl>();
             auto ret = m_encoder->init(text_mmap.data(), text_mmap.size(), init_info->devid);

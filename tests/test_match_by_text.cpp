@@ -7,21 +7,22 @@
 
 int main(int argc, char *argv[])
 {
-    clip_devices_t clip_devices;
-    memset(&clip_devices, 0, sizeof(clip_devices_t));
-    if (clip_enum_devices(&clip_devices) != 0)
+    ax_devices_t ax_devices;
+    memset(&ax_devices, 0, sizeof(ax_devices_t));
+    if (ax_dev_enum_devices(&ax_devices) != 0)
     {
         printf("enum devices failed\n");
         return -1;
     }
 
-    if (clip_devices.host.available)
+    if (ax_devices.host.available)
     {
-        clip_sys_init(host_device, -1);
+        ax_dev_sys_init(host_device, -1);
     }
-    else if (clip_devices.devices.count > 0)
+
+    if (ax_devices.devices.count > 0)
     {
-        clip_sys_init(axcl_device, 0);
+        ax_dev_sys_init(axcl_device, 0);
     }
     else
     {
@@ -55,11 +56,11 @@ int main(int argc, char *argv[])
     printf("isCN: %d\n", init_info.isCN);
     printf("db_path: %s\n", init_info.db_path);
 
-    if (clip_devices.host.available)
+    if (ax_devices.host.available)
     {
         init_info.dev_type = host_device;
     }
-    else if (clip_devices.devices.count > 0)
+    else if (ax_devices.devices.count > 0)
     {
         init_info.dev_type = axcl_device;
         init_info.devid = 0;
@@ -117,14 +118,13 @@ int main(int argc, char *argv[])
 
     clip_destroy(handle);
 
-    if (clip_devices.host.available)
+    if (ax_devices.host.available)
     {
-        clip_sys_deinit(host_device, -1);
+        ax_dev_sys_deinit(host_device, -1);
     }
-    else if (clip_devices.devices.count > 0)
+    else if (ax_devices.devices.count > 0)
     {
-
-        clip_sys_deinit(axcl_device, 0);
+        ax_dev_sys_deinit(axcl_device, 0);
     }
 
     return 0;

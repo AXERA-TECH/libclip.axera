@@ -9,7 +9,7 @@
 #include <regex>
 #include <cstring> // For strncpy
 
-bool parse_axcl_smi_output(FILE *fp, clip_devices_t &out)
+bool parse_axcl_smi_output(FILE *fp, ax_devices_t &out)
 {
     if (!fp)
         return false;
@@ -76,7 +76,7 @@ bool parse_axcl_smi_output(FILE *fp, clip_devices_t &out)
     return true;
 }
 
-bool get_axcl_devices(clip_devices_t *info)
+bool get_axcl_devices(ax_devices_t *info)
 {
     FILE *fp = popen("axcl-smi", "r");
     if (!fp)
@@ -121,7 +121,7 @@ static bool file_exists(const std::string &name)
     return f.good();
 }
 
-static bool get_board_info(clip_devices_t *info)
+static bool get_board_info(ax_devices_t *info)
 {
     // std::string cmd = "strings ${BSP_MSP_DIR}/lib/libax_sys.so | grep 'Axera version' | awk '{print $4}'";
     char cmd[128] = {0};
@@ -154,7 +154,7 @@ static bool get_board_info(clip_devices_t *info)
     return false;
 }
 
-bool get_host_info(clip_devices_t *info)
+bool get_host_info(ax_devices_t *info)
 {
     std::string version;
     if (get_board_info(info))

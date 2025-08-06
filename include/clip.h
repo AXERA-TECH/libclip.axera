@@ -5,6 +5,7 @@
 extern "C"
 {
 #endif
+#include "ax_devices.h"
 #define CLIP_DEVICES_COUNT 16
 #define CLIP_VERSION_LEN 32
 #define CLIP_KEY_MAX_LEN 64
@@ -16,10 +17,10 @@ extern "C"
         clip_errcode_success = 0,
 
         clip_errcode_invalid_ptr,
-        clip_errcode_sysinit_failed,
-        clip_errcode_sysdeinit_failed,
-        clip_errcode_axcl_sysinit_failed,
-        clip_errcode_axcl_sysdeinit_failed,
+        // clip_errcode_sysinit_failed,
+        // clip_errcode_sysdeinit_failed,
+        // clip_errcode_axcl_sysinit_failed,
+        // clip_errcode_axcl_sysdeinit_failed,
 
         clip_errcode_create_failed = 0x10000,
         clip_errcode_create_failed_sys,
@@ -44,51 +45,51 @@ extern "C"
         clip_errcode_match_failed_encode_image,
     } clip_errcode_e;
 
-    typedef enum
-    {
-        unknown_device = 0,
-        host_device = 1,
-        axcl_device = 2
-    } clip_devive_e;
+    // typedef enum
+    // {
+    //     unknown_device = 0,
+    //     host_device = 1,
+    //     axcl_device = 2
+    // } clip_devive_e;
 
     typedef void *clip_handle_t;
 
+    // typedef struct
+    // {
+    //     struct
+    //     {
+    //         char available;
+    //         char version[CLIP_VERSION_LEN];
+    //         struct
+    //         {
+    //             int remain;
+    //             int total;
+    //         } mem_info;
+    //     } host;
+
+    //     struct
+    //     {
+    //         char host_version[CLIP_VERSION_LEN];
+    //         char dev_version[CLIP_VERSION_LEN];
+    //         unsigned char count;
+    //         struct
+    //         {
+    //             int temp;
+    //             int cpu_usage;
+    //             int npu_usage;
+    //             struct
+    //             {
+    //                 int remain;
+    //                 int total;
+    //             } mem_info;
+    //         } devices_info[CLIP_DEVICES_COUNT];
+
+    //     } devices;
+    // } clip_devices_t;
+
     typedef struct
     {
-        struct
-        {
-            char available;
-            char version[CLIP_VERSION_LEN];
-            struct
-            {
-                int remain;
-                int total;
-            } mem_info;
-        } host;
-
-        struct
-        {
-            char host_version[CLIP_VERSION_LEN];
-            char dev_version[CLIP_VERSION_LEN];
-            unsigned char count;
-            struct
-            {
-                int temp;
-                int cpu_usage;
-                int npu_usage;
-                struct
-                {
-                    int remain;
-                    int total;
-                } mem_info;
-            } devices_info[CLIP_DEVICES_COUNT];
-
-        } devices;
-    } clip_devices_t;
-
-    typedef struct
-    {
-        clip_devive_e dev_type;                 // Device type
+        ax_devive_e dev_type;                 // Device type
         char devid;                             // axcl device ID
         char text_encoder_path[CLIP_PATH_LEN];  // Text encoder model path
         char image_encoder_path[CLIP_PATH_LEN]; // Image encoder model path
@@ -112,28 +113,28 @@ extern "C"
         float score;
     } clip_result_item_t;
 
-    /**
-     * @brief Enumerate available devices in the current system
-     * @param devices Pointer to device information structure
-     * @return int Returns 0 on success, -1 on failure
-     */
-    int clip_enum_devices(clip_devices_t *devices);
+    // /**
+    //  * @brief Enumerate available devices in the current system
+    //  * @param devices Pointer to device information structure
+    //  * @return int Returns 0 on success, -1 on failure
+    //  */
+    // int clip_enum_devices(clip_devices_t *devices);
 
-    /**
-     * @brief Initialize CLIP system resources
-     * @param dev_type Device type
-     * @param devid Device ID
-     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
-     */
-    int clip_sys_init(clip_devive_e dev_type, char devid);
+    // /**
+    //  * @brief Initialize CLIP system resources
+    //  * @param dev_type Device type
+    //  * @param devid Device ID
+    //  * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+    //  */
+    // int clip_sys_init(clip_devive_e dev_type, char devid);
 
-    /**
-     * @brief Deinitialize CLIP system resources
-     * @param dev_type Device type
-     * @param devid Device ID
-     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
-     */
-    int clip_sys_deinit(clip_devive_e dev_type, char devid);
+    // /**
+    //  * @brief Deinitialize CLIP system resources
+    //  * @param dev_type Device type
+    //  * @param devid Device ID
+    //  * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+    //  */
+    // int clip_sys_deinit(clip_devive_e dev_type, char devid);
 
     /**
      * @brief Create CLIP handle

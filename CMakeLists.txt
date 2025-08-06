@@ -31,6 +31,7 @@ add_library(clip SHARED
     src/runner/axcl/ax_model_runner_axcl.cpp
     src/runner/ax650/ax_model_runner_ax650.cpp
     src/utils/enum_devices.cpp
+    src/ax_devices.cpp
 )
 
 target_link_libraries(clip ${OpenCV_LIBS} leveldb dl pthread)

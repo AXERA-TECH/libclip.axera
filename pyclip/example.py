@@ -1,5 +1,5 @@
 import os
-from pyclip import Clip, enum_devices, sys_init, sys_deinit, ClipDeviceType
+from pyclip import Clip, enum_devices, sys_init, sys_deinit, AxDeviceType
 import cv2
 import glob
 import argparse
@@ -22,10 +22,10 @@ if __name__ == '__main__':
     print("可用设备:", devices_info)
     if devices_info['host']['available']:
         print("host device available")
-        sys_init(ClipDeviceType.host_device, -1)
+        sys_init(AxDeviceType.host_device, -1)
     elif devices_info['devices']['count'] > 0:
         print("axcl device available, use device-0")
-        sys_init(ClipDeviceType.axcl_device, 0)
+        sys_init(AxDeviceType.axcl_device, 0)
     else:
         raise Exception("No available device")
 
@@ -55,6 +55,6 @@ if __name__ == '__main__':
     finally:
         # 反初始化系统
         if devices_info['host']['available']:
-            sys_deinit(ClipDeviceType.host_device, -1)
+            sys_deinit(AxDeviceType.host_device, -1)
         elif devices_info['devices']['count'] > 0:
-            sys_deinit(ClipDeviceType.axcl_device, 0)
+            sys_deinit(AxDeviceType.axcl_device, 0)
