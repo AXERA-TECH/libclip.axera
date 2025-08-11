@@ -26,6 +26,13 @@ class ClipImage(ctypes.Structure):
         ('stride', ctypes.c_int)
     ]
 
+class ClipFeatureItem(ctypes.Structure):
+    _fields_ = [
+        ('feat', ctypes.c_float * 768),
+        ('len', ctypes.c_int)
+    ]
+
+
 class ClipResultItem(ctypes.Structure):
     _fields_ = [
         ('key', ctypes.c_char * 64),
@@ -46,6 +53,12 @@ _lib.clip_remove.restype = ctypes.c_int
 
 _lib.clip_contain.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 _lib.clip_contain.restype = ctypes.c_int
+
+_lib.clip_get_text_feat.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ClipFeatureItem)]
+_lib.clip_get_text_feat.restype = ctypes.c_int
+
+_lib.clip_match_feat.argtypes = [ctypes.c_void_p, ctypes.POINTER(ClipFeatureItem), ctypes.POINTER(ClipResultItem), ctypes.c_int]
+_lib.clip_match_feat.restype = ctypes.c_int
 
 _lib.clip_match_text.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ClipResultItem), ctypes.c_int]
 _lib.clip_match_text.restype = ctypes.c_int
@@ -96,6 +109,24 @@ class Clip:
     def contains_image(self, key: str) -> bool:
         return _lib.clip_contain(self.handle, key.encode('utf-8')) == 1
 
+    def get_text_feat(self, text: str) -> np.ndarray:
+        feat = ClipFeatureItem()
+        check_error(_lib.clip_get_text_feat(self.handle, text.encode('utf-8'), ctypes.byref(feat)))
+        return np.array(feat.feat[:feat.len])
+
+    def match_feat(self, feat: np.ndarray, top_k: int = 10) -> List[Tuple[str, float]]:
+        feat_item = ClipFeatureItem()
+        # feat_item.feat = feat.astype(np.float32).tolist()
+        arr = feat.astype(np.float32)
+        for i in range(len(arr)):
+            feat_item.feat[i] = arr[i]
+        feat_item.len = len(feat)
+        
+        results = (ClipResultItem * top_k)()
+        check_error(_lib.clip_match_feat(self.handle, ctypes.byref(feat_item), results, top_k))
+        
+        return [(item.key.decode('utf-8'), item.score) for item in results]
+    
     def match_text(self, text: str, top_k: int = 10) -> List[Tuple[str, float]]:
         results = (ClipResultItem * top_k)()
         check_error(_lib.clip_match_text(self.handle, text.encode('utf-8'), results, top_k))

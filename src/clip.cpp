@@ -348,6 +348,32 @@ int clip_contain(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN])
     return 0;
 }
 
+int clip_get_text_feat(clip_handle_t handle, const char *text, clip_feature_item_t *feature)
+{
+    clip_internal_handle_t *internal_handle = (clip_internal_handle_t *)handle;
+    if (internal_handle == nullptr)
+    {
+        printf("handle is null\n");
+        return clip_errcode_invalid_ptr;
+    }
+    std::vector<std::vector<float>> text_features;
+    std::vector<std::string> texts = {text};
+    auto ret = internal_handle->m_clip.encode(texts, text_features);
+    if (!ret)
+    {
+        printf("encode text failed\n");
+        return clip_errcode_match_failed_encode_text;
+    }
+    if (text_features.size() != 1)
+    {
+        printf("encode text failed, text_features size: %ld\n", text_features.size());
+        return clip_errcode_match_failed_encode_text;
+    }
+    memcpy(feature->feat, text_features[0].data(), text_features[0].size() * sizeof(float));
+    feature->len = text_features[0].size();
+    return clip_errcode_success;
+}
+
 // 结构体保存 index 和 score 用于比较
 struct ScoreIndex
 {
@@ -404,22 +430,19 @@ void get_top_k_results(const std::vector<float> &scores,
     }
 }
 
-int clip_match_text(clip_handle_t handle, const char *text, clip_result_item_t *results, int top_k)
+int clip_match_feat(clip_handle_t handle, clip_feature_item_t *feature, clip_result_item_t *results, int top_k)
 {
+    std::vector<std::vector<float>> text_features(1);
+    text_features[0].resize(feature->len);
+    memcpy(text_features[0].data(), feature->feat, feature->len * sizeof(float));
+
     clip_internal_handle_t *internal_handle = (clip_internal_handle_t *)handle;
     if (internal_handle == nullptr)
     {
         printf("handle is null\n");
         return clip_errcode_invalid_ptr;
     }
-    std::vector<std::vector<float>> text_features;
-    std::vector<std::string> texts = {text};
-    auto ret = internal_handle->m_clip.encode(texts, text_features);
-    if (!ret)
-    {
-        printf("encode text failed\n");
-        return clip_errcode_match_failed_encode_text;
-    }
+
     std::vector<std::vector<float>> logits_per_image;
     std::vector<std::vector<float>> logits_per_text;
     internal_handle->m_clip.decode(internal_handle->m_image_features, text_features, logits_per_image, logits_per_text);
@@ -429,6 +452,17 @@ int clip_match_text(clip_handle_t handle, const char *text, clip_result_item_t *
     get_top_k_results(scores, internal_handle->m_keys, results, top_k);
 
     return clip_errcode_success;
+}
+
+int clip_match_text(clip_handle_t handle, const char *text, clip_result_item_t *results, int top_k)
+{
+    clip_feature_item_t feature = {0};
+    if (clip_get_text_feat(handle, text, &feature) != clip_errcode_success)
+    {
+        printf("get text feature failed\n");
+        return clip_errcode_match_failed_encode_text;
+    }
+    return clip_match_feat(handle, &feature, results, top_k);
 }
 
 int clip_match_image(clip_handle_t handle, clip_image_t *image, clip_result_item_t *results, int top_k)

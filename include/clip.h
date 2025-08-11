@@ -10,6 +10,7 @@ extern "C"
 #define CLIP_VERSION_LEN 32
 #define CLIP_KEY_MAX_LEN 64
 #define CLIP_PATH_LEN 128
+#define CLIP_TEXT_FEAT_MAX_LEN 768
 
     typedef enum
     {
@@ -89,7 +90,7 @@ extern "C"
 
     typedef struct
     {
-        ax_devive_e dev_type;                 // Device type
+        ax_devive_e dev_type;                   // Device type
         char devid;                             // axcl device ID
         char text_encoder_path[CLIP_PATH_LEN];  // Text encoder model path
         char image_encoder_path[CLIP_PATH_LEN]; // Image encoder model path
@@ -106,6 +107,12 @@ extern "C"
         int channels;
         int stride;
     } clip_image_t;
+
+    typedef struct
+    {
+        float feat[CLIP_TEXT_FEAT_MAX_LEN];
+        int len;
+    } clip_feature_item_t;
 
     typedef struct
     {
@@ -176,6 +183,25 @@ extern "C"
      * @return int Returns 1 if exists, 0 if not exists
      */
     int clip_contain(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN]);
+
+    /**
+     * @brief Get text feature
+     * @param handle Handle
+     * @param text Text
+     * @param feat Pointer to feature structure
+     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+     */
+    int clip_get_text_feat(clip_handle_t handle, const char *text, clip_feature_item_t *feat);
+
+    /**
+     * @brief Feature match CLIP database images (cosine similarity)
+     * @param handle Handle
+     * @param feat Pointer to feature structure
+     * @param results Pointer to result structure
+     * @param top_k Top k results
+     * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
+     */
+    int clip_match_feat(clip_handle_t handle, clip_feature_item_t *feat, clip_result_item_t *results, int top_k);
 
     /**
      * @brief Text match CLIP database images (softmax)

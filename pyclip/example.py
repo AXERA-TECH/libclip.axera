@@ -1,5 +1,6 @@
 import os
-from pyclip import Clip, enum_devices, sys_init, sys_deinit, AxDeviceType
+from pyclip import Clip
+from pyaxdev import enum_devices, sys_init, sys_deinit, AxDeviceType
 import cv2
 import glob
 import argparse
@@ -43,13 +44,20 @@ if __name__ == '__main__':
         # 添加图像
         image_files = glob.glob(os.path.join(image_folder, '*.jpg'))
         for image_file in tqdm.tqdm(image_files):
+            filename = os.path.basename(image_file)
+            if clip.contains_image(filename) == 1:
+                continue
             img = cv2.imread(image_file)
             cv2.cvtColor(img, cv2.COLOR_BGR2RGB, img)
-            filename = os.path.basename(image_file)
             clip.add_image(filename, img)
 
         # 文本匹配
         results = clip.match_text('dog', top_k=10)
+        print("匹配结果:", results)
+        
+        # 特征匹配
+        feat = clip.get_text_feat('dog')
+        results = clip.match_feat(feat, top_k=10)
         print("匹配结果:", results)
 
     finally:
