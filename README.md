@@ -39,6 +39,12 @@ flowchart TD
 
 ## Build Instructions
 
+### Download nightly
+
+- [x86](https://nightly.link/AXERA-TECH/libclip.axera/workflows/build/main/build-x86.zip)
+- [aarch64](https://nightly.link/AXERA-TECH/libclip.axera/workflows/build/main/build-aarch64.zip)
+
+
 ### x86 Build
 
 ```bash

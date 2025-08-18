@@ -36,6 +36,12 @@ flowchart TD
 
 ## 构建说明
 
+### 预构建二进制文件
+
+- [x86](https://nightly.link/AXERA-TECH/libclip.axera/workflows/build/main/build-x86.zip)
+- [aarch64](https://nightly.link/AXERA-TECH/libclip.axera/workflows/build/main/build-aarch64.zip)
+
+
 ### x86构建
 
 ```bash

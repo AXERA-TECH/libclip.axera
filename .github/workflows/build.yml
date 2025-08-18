@@ -20,16 +20,11 @@ jobs:
       - name: Build x86
         run: sh ./build.sh
 
-      - name: Package x86 install
-        run: |
-          cd build
-          tar -czf install-x86.tar.gz install
-
       - name: Upload x86 artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-x86
-          path: build/install-x86.tar.gz
+          path: build/install/
 
   build-aarch64:
     name: aarch64 Build
@@ -43,13 +38,8 @@ jobs:
       - name: Build aarch64
         run: sh ./build_aarch64.sh
 
-      - name: Package aarch64 install
-        run: |
-          cd build_aarch64
-          tar -czf install-aarch64.tar.gz install
-
       - name: Upload aarch64 artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-aarch64
-          path: build_aarch64/install-aarch64.tar.gz
+          path: build_aarch64/install/
