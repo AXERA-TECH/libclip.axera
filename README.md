@@ -54,6 +54,7 @@ git clone --recursive https://github.com/AXERA-TECH/libclip.axera.git
 cd libclip.axera
 sudo apt install libopencv-dev build-essential 
 mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j8
 make install
 ```
