@@ -53,7 +53,9 @@ flowchart TD
 git clone --recursive https://github.com/AXERA-TECH/libclip.axera.git
 cd libclip.axera
 sudo apt install libopencv-dev build-essential 
-./build.sh
+mkdir build && cd build
+make -j8
+make install
 ```
 
 ### AArch64 Build
