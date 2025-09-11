@@ -24,7 +24,8 @@ int main(int argc, char *argv[])
     {
         ax_dev_sys_init(axcl_device, 0);
     }
-    else
+    
+    if (!ax_devices.host.available && ax_devices.devices.count == 0)
     {
         printf("no device available\n");
         return -1;
