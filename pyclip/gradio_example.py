@@ -16,6 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('--isCN', type=int, default=1)
     parser.add_argument('--db_path', type=str, default='clip_feat_db_coco')
     parser.add_argument('--image_folder', type=str, default='coco_1000')
+    parser.add_argument('--dev_type', type=str, default='host', choices=['host', 'axcl'])
     args = parser.parse_args()
 
     image_folder = args.image_folder
@@ -23,12 +24,14 @@ if __name__ == '__main__':
     # 初始化
     devices_info = enum_devices()
     print("可用设备:", devices_info)
+    device = AxDeviceType.host_device if args.dev_type == 'host' else AxDeviceType.axcl_device
+
     if devices_info['host']['available']:
         print("host device available")
-        sys_init(AxDeviceType.host_device, -1)
+        sys_init(device, 0)
     elif devices_info['devices']['count'] > 0:
         print("axcl device available, use device-0")
-        sys_init(AxDeviceType.axcl_device, 0)
+        sys_init(device, 0)
     else:
         raise Exception("No available device")
 
@@ -37,7 +40,8 @@ if __name__ == '__main__':
         'image_encoder_path': args.ienc,
         'tokenizer_path': args.vocab,
         'db_path': args.db_path,
-        'isCN': args.isCN
+        'isCN': args.isCN,
+        'dev_type': device
     })
 
 
