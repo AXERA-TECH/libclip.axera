@@ -7,6 +7,22 @@ import glob
 from PIL import Image
 import tqdm
 import argparse
+import subprocess
+import re
+
+def get_all_local_ips():
+    result = subprocess.run(['ip', 'a'], capture_output=True, text=True)
+    output = result.stdout
+
+    # 匹配所有IPv4
+    ips = re.findall(r'inet (\d+\.\d+\.\d+\.\d+)', output)
+
+    # 过滤掉回环地址
+    real_ips = [ip for ip in ips if not ip.startswith('127.')]
+
+    return real_ips
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -22,16 +38,20 @@ if __name__ == '__main__':
     image_folder = args.image_folder
 
     # 初始化
+    dev_type = AxDeviceType.unknown_device
+    dev_id = -1
     devices_info = enum_devices()
     print("可用设备:", devices_info)
-    device = AxDeviceType.host_device if args.dev_type == 'host' else AxDeviceType.axcl_device
-
     if devices_info['host']['available']:
         print("host device available")
-        sys_init(device, 0)
+        sys_init(AxDeviceType.host_device, -1)
+        dev_type = AxDeviceType.host_device
+        dev_id = -1
     elif devices_info['devices']['count'] > 0:
         print("axcl device available, use device-0")
-        sys_init(device, 0)
+        sys_init(AxDeviceType.axcl_device, 0)
+        dev_type = AxDeviceType.axcl_device
+        dev_id = 0
     else:
         raise Exception("No available device")
 
@@ -41,7 +61,8 @@ if __name__ == '__main__':
         'tokenizer_path': args.vocab,
         'db_path': args.db_path,
         'isCN': args.isCN,
-        'dev_type': device
+        'dev_type': dev_type,
+        'devid': dev_id,
     })
 
 
@@ -84,6 +105,9 @@ if __name__ == '__main__':
         search_btn.click(fn=search_images, inputs=[query_input, topk_input], outputs=gallery)
 
     # 启动
+    ips = get_all_local_ips()
+    for ip in ips:
+        print(f"* Running on local URL:  http://{ip}:7860")
     ip = "0.0.0.0"
     demo.launch(server_name=ip, server_port=7860)
 
