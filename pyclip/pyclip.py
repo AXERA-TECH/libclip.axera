@@ -13,7 +13,6 @@ class ClipInit(ctypes.Structure):
         ('text_encoder_path', ctypes.c_char * 128),
         ('image_encoder_path', ctypes.c_char * 128),
         ('tokenizer_path', ctypes.c_char * 128),
-        ('isCN', ctypes.c_char),
         ('db_path', ctypes.c_char * 128)
     ]
 
@@ -75,7 +74,6 @@ class Clip:
         # 设置初始化参数
         self.init_info.dev_type = init_info.get('dev_type', AxDeviceType.axcl_device)
         self.init_info.devid = init_info.get('devid', 0)
-        self.init_info.isCN = init_info.get('isCN', 1)
         
         # 设置路径
         for path_name in ['text_encoder_path', 'image_encoder_path', 'tokenizer_path', 'db_path']:

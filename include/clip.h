@@ -10,7 +10,7 @@ extern "C"
 #define CLIP_VERSION_LEN 32
 #define CLIP_KEY_MAX_LEN 64
 #define CLIP_PATH_LEN 128
-#define CLIP_TEXT_FEAT_MAX_LEN 768
+#define CLIP_TEXT_FEAT_MAX_LEN 1024
 
     typedef enum
     {
@@ -95,7 +95,7 @@ extern "C"
         char text_encoder_path[CLIP_PATH_LEN];  // Text encoder model path
         char image_encoder_path[CLIP_PATH_LEN]; // Image encoder model path
         char tokenizer_path[CLIP_PATH_LEN];     // Tokenizer model path
-        char isCN;                              // Whether it's a Chinese model (0: English, 1: Chinese)
+        // char isCN;                              // Whether it's a Chinese model (0: English, 1: Chinese)
         char db_path[CLIP_PATH_LEN];            // Database path (if empty path is specified, a folder will be created)
     } clip_init_t;
 

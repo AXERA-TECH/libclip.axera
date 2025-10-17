@@ -7,27 +7,36 @@
 #include <memory>
 #include "clip.h"
 #include "sample_log.h"
-#include "Tokenizer.hpp"
+#include "tokenizer/tokenizer.hpp"
+#include "CLIP.hpp" 
 
-#ifndef EN_TEXT_TOKEN_LEN
-#define EN_TEXT_TOKEN_LEN 77
-#endif
-
-#ifndef ZH_TEXT_TOKEN_LEN
-#define ZH_TEXT_TOKEN_LEN 52
-#endif
+enum class CLIPType
+{
+    unknown = 0,
+    jina_clip_v2,
+    cn_clip,
+    clip
+};
 
 class CLIPTextEncoder
 {
 protected:
-    std::shared_ptr<TokenizerBase> tokenizer;
+    std::unique_ptr<MNN::Transformer::Tokenizer> tokenizer;
 
-    std::vector<float> text_features_input;
-    std::vector<int> text_tokens_input;
-
-    bool _isCN = false;
+    // bool _isCN = false;
     int LEN_TEXT_FEATURE = 512;
-    int LEN_TEXT_TOKEN = EN_TEXT_TOKEN_LEN;
+    int LEN_TEXT_TOKEN = 77;
+    
+    int PAD_TOKEN = 0;
+
+    std::map<CLIPType, std::pair<std::string, std::string>> bos_eos_map = {
+        {CLIPType::jina_clip_v2, {"<s>", "</s>"}},
+        {CLIPType::cn_clip, {"[CLS]", "[SEP]"}},
+        {CLIPType::clip, {"<|startoftext|>", "<|endoftext|>"}}};
+
+    CLIPType clip_type = CLIPType::unknown;
+    std::string bos_str;
+    std::string eos_str;
 
 public:
     virtual bool load_text_encoder(clip_init_t *clip_init) = 0;
@@ -37,28 +46,43 @@ public:
         return LEN_TEXT_FEATURE;
     }
 
-    bool load_tokenizer(std::string vocab_path, bool isCN)
+    CLIPType get_clip_type()
     {
-        std::ifstream fs(vocab_path);
+        return clip_type;
+    }
+
+    bool load_tokenizer(std::string tokenizer_path)
+    {
+        std::ifstream fs(tokenizer_path);
         if (!fs.good())
         {
-            ALOGE("vocab file open failed %s", vocab_path.c_str());
+            ALOGE("vocab file open failed %s", tokenizer_path.c_str());
             return false;
         }
         fs.close();
 
-        _isCN = isCN;
-        if (isCN)
+        tokenizer.reset(MNN::Transformer::Tokenizer::createTokenizer(tokenizer_path));
+
+        for (auto &[key, value] : bos_eos_map)
         {
-            LEN_TEXT_TOKEN = ZH_TEXT_TOKEN_LEN;
-            tokenizer.reset(new TokenizerClipChinese);
+            if (tokenizer->is_special(tokenizer->encode(value.first)[0]) && tokenizer->is_special(tokenizer->encode(value.second)[0]))
+            {
+                clip_type = key;
+                break;
+            }
         }
-        else
+        if (clip_type == CLIPType::unknown)
         {
-            tokenizer.reset(new TokenizerClip);
+            std::cout << "Unknown clip type" << std::endl;
+            return false;
         }
-        ALOGI("text token len %d", LEN_TEXT_TOKEN);
-        text_tokens_input = std::vector<int>(1024 * LEN_TEXT_TOKEN);
-        return tokenizer->load_tokenize(vocab_path);
+        bos_str = bos_eos_map[clip_type].first;
+        eos_str = bos_eos_map[clip_type].second;
+        if (clip_type == CLIPType::jina_clip_v2)
+        {
+            PAD_TOKEN = 1;
+        }
+        printf("clip_type: %d, bos_str: %s, eos_str: %s\n", (int)clip_type, bos_str.c_str(), eos_str.c_str());
+        return true;
     }
 };

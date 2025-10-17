@@ -39,19 +39,26 @@ public:
                 return false;
             }
         }
-
+        LEN_TEXT_TOKEN = m_encoder->get_input(0).vShape[m_encoder->get_input(0).vShape.size() - 1];
         LEN_TEXT_FEATURE = m_encoder->get_output(0).vShape[m_encoder->get_output(0).vShape.size() - 1];
-        ALOGI("text feature len %d", LEN_TEXT_FEATURE);
+        ALOGI("text token len %d, text feature len %d", LEN_TEXT_TOKEN, LEN_TEXT_FEATURE);
         return true;
     }
 
     template <typename T>
-    void fill_ids(T *data, int len, std::vector<int> &text_token)
+    void fill_ids(T *data, int len, std::vector<int> &text_token, int pad_token = 0)
     {
         memset(data, 0, len * sizeof(T));
         for (int i = 0; i < len; i++)
         {
-            data[i] = text_token[i];
+            if (i < (int)text_token.size())
+            {
+                data[i] = text_token[i];
+            }
+            else
+            {
+                data[i] = pad_token;
+            }
         }
     }
 
@@ -64,22 +71,15 @@ public:
         text_features.resize(texts.size());
         for (size_t i = 0; i < texts.size(); i++)
         {
-            std::vector<int> text_token;
-            tokenizer->encode_text(texts[i], text_token);
+            auto text = bos_str + texts[i] + eos_str;
+            std::vector<int> text_token = tokenizer->encode(text);
             if (text_token.size() > LEN_TEXT_TOKEN)
             {
                 ALOGW("the text of \"%s\" token bigger than %d\n", texts[i].c_str(), LEN_TEXT_TOKEN);
                 return false;
             }
 
-            // if (_isCN)
-            // {
-            //     fill_ids((int64_t *)m_encoder->get_input(0).pVirAddr, text_token.size(), text_token);
-            // }
-            // else
-            // {
-            fill_ids((int32_t *)m_encoder->get_input(0).pVirAddr, text_token.size(), text_token);
-            // }
+            fill_ids((int32_t *)m_encoder->get_input(0).pVirAddr, LEN_TEXT_TOKEN, text_token, PAD_TOKEN);
             m_encoder->inference();
             text_features[i].resize(LEN_TEXT_FEATURE);
             // m_encoder->mem_sync_output(0);

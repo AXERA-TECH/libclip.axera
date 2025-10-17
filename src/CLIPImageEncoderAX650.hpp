@@ -58,7 +58,6 @@ public:
 
         LEN_IMAGE_FEATURE = m_encoder->get_output(0).vShape[1];
         ALOGI("image feature len %d", LEN_IMAGE_FEATURE);
-        image_features_input = std::vector<float>(1024 * LEN_IMAGE_FEATURE);
         return true;
     }
 

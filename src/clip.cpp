@@ -22,141 +22,6 @@ AxclApiLoader &getLoader();
 AxSysApiLoader &get_ax_sys_loader();
 AxEngineApiLoader &get_ax_engine_loader();
 
-// struct gInit
-// {
-//     gInit()
-//     {
-//         if (getLoader().is_init())
-//         {
-//             auto ret = axclInit();
-//             if (ret != 0)
-//             {
-//                 printf("axclInit failed\n");
-//             }
-//         }
-//         else
-//         {
-//             printf("unsupport axcl\n");
-//         }
-//     }
-
-//     ~gInit()
-//     {
-//         if (getLoader().is_init())
-//         {
-//             auto ret = axclFinalize();
-//             if (ret != 0)
-//             {
-//                 printf("axclFinalize failed\n");
-//             }
-//         }
-//     }
-// };
-// std::shared_ptr<gInit> gIniter = std::make_shared<gInit>();
-
-// int clip_enum_devices(clip_devices_t *devices)
-// {
-//     get_host_info(devices);
-//     get_axcl_devices(devices);
-//     return 0;
-// }
-
-// int clip_sys_init(clip_devive_e dev_type, char devid)
-// {
-//     if (dev_type == clip_devive_e::host_device)
-//     {
-//         if (get_ax_sys_loader().is_init() && get_ax_engine_loader().is_init())
-//         {
-//             AxSysApiLoader &ax_sys_loader = get_ax_sys_loader();
-//             AxEngineApiLoader &ax_engine_loader = get_ax_engine_loader();
-//             auto ret = ax_sys_loader.AX_SYS_Init();
-//             if (ret != 0)
-//             {
-//                 printf("AX_SYS_Init failed\n");
-//                 return clip_errcode_sysinit_failed;
-//             }
-//             AX_ENGINE_NPU_ATTR_T npu_attr;
-//             memset(&npu_attr, 0, sizeof(AX_ENGINE_NPU_ATTR_T));
-//             npu_attr.eHardMode = AX_ENGINE_VIRTUAL_NPU_DISABLE;
-//             ret = ax_engine_loader.AX_ENGINE_Init(&npu_attr);
-//             if (ret != 0)
-//             {
-//                 printf("AX_ENGINE_Init failed\n");
-//                 return clip_errcode_sysinit_failed;
-//             }
-//             return clip_errcode_success;
-//         }
-//         else
-//         {
-//             printf("axsys or axengine not init\n");
-//             return clip_errcode_sysinit_failed;
-//         }
-//     }
-//     else if (dev_type == clip_devive_e::axcl_device)
-//     {
-//         if (!getLoader().is_init())
-//         {
-//             printf("unsupport axcl\n");
-//             return clip_errcode_axcl_sysinit_failed;
-//         }
-//         auto ret = axcl_Dev_Init(devid);
-//         if (ret != 0)
-//         {
-//             printf("axcl_Dev_Init failed\n");
-//             return clip_errcode_axcl_sysinit_failed;
-//         }
-//         return clip_errcode_success;
-//     }
-//     return clip_errcode_sysinit_failed;
-// }
-
-// int clip_sys_deinit(clip_devive_e dev_type, char devid)
-// {
-//     if (dev_type == clip_devive_e::host_device)
-//     {
-//         if (get_ax_sys_loader().is_init() && get_ax_engine_loader().is_init())
-//         {
-//             AxSysApiLoader &ax_sys_loader = get_ax_sys_loader();
-//             AxEngineApiLoader &ax_engine_loader = get_ax_engine_loader();
-//             auto ret = ax_engine_loader.AX_ENGINE_Deinit();
-//             if (ret != 0)
-//             {
-//                 printf("AX_ENGINE_Deinit failed\n");
-//                 return clip_errcode_sysdeinit_failed;
-//             }
-//             ret = ax_sys_loader.AX_SYS_Deinit();
-//             if (ret != 0)
-//             {
-//                 printf("AX_SYS_Deinit failed\n");
-//                 return clip_errcode_sysdeinit_failed;
-//             }
-//             return clip_errcode_success;
-//         }
-//         else
-//         {
-//             printf("axsys or axengine not init\n");
-//             return -1;
-//         }
-//     }
-//     else if (dev_type == clip_devive_e::axcl_device)
-//     {
-//         if (!getLoader().is_init())
-//         {
-//             printf("unsupport axcl\n");
-//             return clip_errcode_axcl_sysdeinit_failed;
-//         }
-//         auto ret = axcl_Dev_Exit(devid);
-//         if (ret != 0)
-//         {
-//             printf("axcl_Dev_Exit failed\n");
-//             return clip_errcode_axcl_sysdeinit_failed;
-//         }
-
-//         return clip_errcode_success;
-//     }
-//     return clip_errcode_sysdeinit_failed;
-// }
-
 struct clip_internal_handle_t
 {
     CLIP m_clip;
@@ -213,7 +78,7 @@ int clip_create(clip_init_t *init_info, clip_handle_t *_handle)
         delete handle;
         return clip_errcode_create_failed_tenc;
     }
-    ret = handle->m_clip.load_tokenizer(init_info->tokenizer_path, init_info->isCN);
+    ret = handle->m_clip.load_tokenizer(init_info->tokenizer_path);
     if (!ret)
     {
         printf("load tokenizer failed\n");
@@ -369,6 +234,12 @@ int clip_get_text_feat(clip_handle_t handle, const char *text, clip_feature_item
         printf("encode text failed, text_features size: %ld\n", text_features.size());
         return clip_errcode_match_failed_encode_text;
     }
+    if (text_features[0].size() > CLIP_TEXT_FEAT_MAX_LEN)
+    {
+        printf("encode text failed, text_features size: %ld > %d\n", text_features[0].size(), CLIP_TEXT_FEAT_MAX_LEN);
+        return clip_errcode_match_failed_encode_text;
+    }
+    
     memcpy(feature->feat, text_features[0].data(), text_features[0].size() * sizeof(float));
     feature->len = text_features[0].size();
     return clip_errcode_success;

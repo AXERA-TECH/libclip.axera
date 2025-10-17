@@ -106,14 +106,14 @@ public:
         return m_text_encoder->get_text_feature_size();
     }
 
-    bool load_tokenizer(std::string vocab_path, bool isCN)
+    bool load_tokenizer(std::string vocab_path)
     {
         if (m_text_encoder == nullptr)
         {
             ALOGE("text encoder is null");
             return -1;
         }
-        return m_text_encoder->load_tokenizer(vocab_path, isCN);
+        return m_text_encoder->load_tokenizer(vocab_path);
     }
 
     bool load_text_encoder(clip_init_t *init_info)
@@ -141,7 +141,8 @@ public:
             ALOGE("image encoder is null");
             return false;
         }
-        return m_image_encoder->encode(image, image_features);
+        auto ret = m_image_encoder->encode(image, image_features);
+        return ret;
     }
 
     bool encode(cv::Mat image, std::vector<float> &image_features)
@@ -151,7 +152,8 @@ public:
             ALOGE("image encoder is null");
             return false;
         }
-        return m_image_encoder->encode(image, image_features);
+        auto ret = m_image_encoder->encode(image, image_features);
+        return ret;
     }
 
     bool encode(std::vector<std::string> &texts, std::vector<std::vector<float>> &text_features)
@@ -161,7 +163,8 @@ public:
             ALOGE("text encoder is null");
             return false;
         }
-        return m_text_encoder->encode(texts, text_features);
+        auto ret = m_text_encoder->encode(texts, text_features);
+        return ret;
     }
 
     bool encode(std::string text, std::vector<float> &text_feature)

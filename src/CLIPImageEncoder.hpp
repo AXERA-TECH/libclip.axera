@@ -10,8 +10,6 @@ protected:
     float _mean_val[3] = {0.48145466f * 255.f, 0.4578275f * 255.f, 0.40821073f * 255.f};
     float _std_val[3] = {1 / (0.26862954f * 255.f), 1 / (0.26130258f * 255.f), 1 / (0.27577711f * 255.f)};
 
-    std::vector<float> image_features_input;
-
     int LEN_IMAGE_FEATURE = 512;
     int input_height, input_width;
 

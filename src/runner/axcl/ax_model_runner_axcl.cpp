@@ -45,7 +45,7 @@ void print_io_info(std::vector<ax_runner_tensor_t> &input, std::vector<ax_runner
                 printf(" x ");
             }
         }
-        printf("\e[0m\n\n");
+        printf("  %d\e[0m\n\n", info.nSize);
     }
 
     printf("\noutput size: %ld\n", output.size());
@@ -62,7 +62,7 @@ void print_io_info(std::vector<ax_runner_tensor_t> &input, std::vector<ax_runner
                 printf(" x ");
             }
         }
-        printf("\e[0m\n\n");
+        printf("  %d\e[0m\n\n", info.nSize);
     }
 }
 

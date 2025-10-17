@@ -11,7 +11,6 @@ if __name__ == '__main__':
     parser.add_argument('--ienc', type=str, default='cnclip/cnclip_vit_l14_336px_vision_u16u8.axmodel')
     parser.add_argument('--tenc', type=str, default='cnclip/cnclip_vit_l14_336px_text_u16.axmodel')
     parser.add_argument('--vocab', type=str, default='cnclip/cn_vocab.txt')
-    parser.add_argument('--isCN', type=int, default=1)
     parser.add_argument('--db_path', type=str, default='clip_feat_db_coco')
     parser.add_argument('--image_folder', type=str, default='coco_1000')
     args = parser.parse_args()
@@ -36,8 +35,7 @@ if __name__ == '__main__':
             'text_encoder_path': args.tenc,
             'image_encoder_path': args.ienc,
             'tokenizer_path': args.vocab,
-            'db_path': args.db_path,
-            'isCN': args.isCN
+            'db_path': args.db_path
         })
 
 

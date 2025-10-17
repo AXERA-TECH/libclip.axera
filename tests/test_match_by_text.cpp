@@ -1,9 +1,10 @@
 #include "clip.h"
-#include "cmdline.hpp"
-#include "timer.hpp"
+#include "utils/cmdline.hpp"
+#include "utils/timer.hpp"
 #include <fstream>
 #include <cstring>
 #include <opencv2/opencv.hpp>
+#include "utils/cqdm.h"
 
 int main(int argc, char *argv[])
 {
@@ -24,7 +25,7 @@ int main(int argc, char *argv[])
     {
         ax_dev_sys_init(axcl_device, 0);
     }
-    
+
     if (!ax_devices.host.available && ax_devices.devices.count == 0)
     {
         printf("no device available\n");
@@ -37,8 +38,7 @@ int main(int argc, char *argv[])
     cmdline::parser parser;
     parser.add<std::string>("ienc", 0, "encoder model(onnx model or axmodel)", true, "cnclip/cnclip_vit_l14_336px_vision_u16u8.axmodel");
     parser.add<std::string>("tenc", 0, "text encoder model(onnx model or axmodel)", true, "cnclip/cnclip_vit_l14_336px_text_u16.axmodel");
-    parser.add<std::string>("vocab", 'v', "vocab path", true, "cnclip/cn_vocab.txt");
-    parser.add<int>("language", 'l', "language choose, 0:english 1:chinese", false, 1);
+    parser.add<std::string>("vocab", 'v', "vocab path", true, "tests/cnclip_tokenizer.txt");
     parser.add<std::string>("db_path", 'd', "db path", false, "clip_feat_db");
 
     parser.add<std::string>("image", 'i', "image folder(jpg png etc....)", true);
@@ -48,13 +48,11 @@ int main(int argc, char *argv[])
     sprintf(init_info.image_encoder_path, "%s", parser.get<std::string>("ienc").c_str());
     sprintf(init_info.text_encoder_path, "%s", parser.get<std::string>("tenc").c_str());
     sprintf(init_info.tokenizer_path, "%s", parser.get<std::string>("vocab").c_str());
-    init_info.isCN = parser.get<int>("language");
     sprintf(init_info.db_path, "%s", parser.get<std::string>("db_path").c_str());
 
     printf("image_encoder_path: %s\n", init_info.image_encoder_path);
     printf("text_encoder_path: %s\n", init_info.text_encoder_path);
     printf("tokenizer_path: %s\n", init_info.tokenizer_path);
-    printf("isCN: %d\n", init_info.isCN);
     printf("db_path: %s\n", init_info.db_path);
 
     if (ax_devices.host.available)
@@ -80,7 +78,7 @@ int main(int argc, char *argv[])
 
     std::vector<std::string> image_paths;
     cv::glob(image_src + "/*.*", image_paths);
-
+    auto cqdm = create_cqdm(image_paths.size(), 32);
     for (size_t i = 0; i < image_paths.size(); i++)
     {
         std::string image_path = image_paths[i];
@@ -104,6 +102,7 @@ int main(int argc, char *argv[])
 
         timer t;
         clip_add(handle, key, &image, 0);
+        update_cqdm(&cqdm, i, "count", "get image embeding");
         // printf("add image %s  %04ld/%04ld  %6.2fms\n", image_name.c_str(), i, image_paths.size(), t.cost());
     }
     int topk = 10;
@@ -114,7 +113,7 @@ int main(int argc, char *argv[])
     printf("|%32s | %6s|\n", "key", "score");
     for (size_t i = 0; i < results.size(); i++)
     {
-        printf("|%32s | %6.2f|\n", results[i].key, results[i].score);
+        printf("|%32s | %6.2f|\n", (image_src + "/" + results[i].key).c_str(), results[i].score);
     }
 
     clip_destroy(handle);

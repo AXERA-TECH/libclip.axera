@@ -32,20 +32,24 @@ add_library(clip SHARED
     src/runner/ax650/ax_model_runner_ax650.cpp
     src/utils/enum_devices.cpp
     src/ax_devices.cpp
+    src/tokenizer/tokenizer.cpp
 )
 
 target_link_libraries(clip ${OpenCV_LIBS} leveldb dl pthread)
 
-function(build_test test_name)
-    add_executable(${test_name} tests/${test_name}.cpp)
+function(build_test test_name source)
+    add_executable(${test_name} ${source} tests/utils/cqdm.cpp)
     target_link_libraries(${test_name} clip)
 endfunction()
 
-build_test(test_ax_api)
-build_test(test_axcl_api)
-build_test(test_enum_devices)
-build_test(test_load_model)
-build_test(test_match_by_text)
+build_test(test_ax_api tests/test_ax_api.cpp)
+build_test(test_axcl_api tests/test_axcl_api.cpp)
+build_test(test_enum_devices tests/test_enum_devices.cpp)
+build_test(test_load_model tests/test_load_model.cpp)
+build_test(test_match_by_text tests/test_match_by_text.cpp)
+build_test(test_tokenizer tests/tokenizer/test_tokenizer.cpp)
+
+
 
 install(TARGETS clip
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SYSTEM_PROCESSOR}
