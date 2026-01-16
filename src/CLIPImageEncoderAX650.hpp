@@ -8,7 +8,7 @@ class CLIPImageEncoderAX650 : public CLIPImageEncoder
 {
 private:
     std::shared_ptr<ax_runner_base> m_encoder;
-    cv::Mat input;
+    SimpleCV::Mat input;
 
     bool nchw;
 
@@ -63,16 +63,15 @@ public:
 
     bool encode(clip_image_t *image, std::vector<float> &image_features) override
     {
-        cv::Mat cv_image(image->height, image->width, CV_8UC(image->channels), image->data, image->stride);
-        // cv::imwrite("debug.jpg", cv_image);
-        cv::Mat cv_image_input;
+        SimpleCV::Mat cv_image(image->height, image->width, image->channels, image->data, image->stride);
+        SimpleCV::Mat cv_image_input;
         switch (image->channels)
         {
         case 4:
-            cv::cvtColor(cv_image, cv_image_input, cv::COLOR_BGRA2BGR);
+            cv_image_input = SimpleCV::cvtColor(cv_image, SimpleCV::ColorSpace::BGRA, SimpleCV::ColorSpace::BGR);
             break;
         case 1:
-            cv::cvtColor(cv_image, cv_image_input, cv::COLOR_GRAY2BGR);
+            cv_image_input = SimpleCV::cvtColor(cv_image, SimpleCV::ColorSpace::GRAY, SimpleCV::ColorSpace::BGR);
             break;
         case 3:
             cv_image_input = cv_image;
@@ -84,20 +83,37 @@ public:
         return encode(cv_image, image_features);
     }
 
-    bool encode(cv::Mat image, std::vector<float> &image_features) override
+    bool encode(SimpleCV::Mat image, std::vector<float> &image_features) override
     {
         if (!m_encoder.get())
         {
             ALOGE("encoder not init");
             return false;
         }
-        cv::resize(image, input, cv::Size(input_width, input_height));
-        // cv::cvtColor(input, input, cv::COLOR_BGR2RGB);
+        SimpleCV::Mat cv_image_input;
+        switch (image.channels)
+        {
+        case 4:
+            cv_image_input = SimpleCV::cvtColor(image, SimpleCV::ColorSpace::BGRA, SimpleCV::ColorSpace::BGR);
+            break;
+        case 1:
+            cv_image_input = SimpleCV::cvtColor(image, SimpleCV::ColorSpace::GRAY, SimpleCV::ColorSpace::BGR);
+            break;
+        case 3:
+            cv_image_input = image;
+            break;
+        default:
+            ALOGE("only support channel 1,3,4 uint8 image");
+            return false;
+        }
+
+        SimpleCV::resize(cv_image_input, input, input_width, input_height);
+
         if (nchw)
         {
             float *inputPtr = (float *)m_encoder->get_input(0).pVirAddr;
 
-            uchar *img_data = input.data;
+            unsigned char *img_data = input.data;
 
             int letterbox_cols = input_width;
             int letterbox_rows = input_height;
@@ -117,7 +133,7 @@ public:
         else
         {
             unsigned char *inputPtr = (unsigned char *)m_encoder->get_input(0).pVirAddr;
-            memcpy(inputPtr, input.data, input.cols * input.rows * 3);
+            memcpy(inputPtr, input.data, input.width * input.height * 3);
         }
 
         auto ret = m_encoder->inference();

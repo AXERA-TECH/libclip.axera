@@ -1,5 +1,6 @@
 #pragma once
-#include <opencv2/opencv.hpp>
+// #include <opencv2/opencv.hpp>
+#include <SimpleCV.hpp>
 #include <memory>
 #include "clip.h"
 #include "sample_log.h"
@@ -15,7 +16,7 @@ protected:
 
 public:
     virtual bool load_image_encoder(clip_init_t *clip_init) = 0;
-    virtual bool encode(cv::Mat image, std::vector<float> &image_features) = 0;
+    virtual bool encode(SimpleCV::Mat image, std::vector<float> &image_features) = 0;
     virtual bool encode(clip_image_t *image, std::vector<float> &image_features) = 0;
 
     int get_image_feature_size()

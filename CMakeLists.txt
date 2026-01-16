@@ -16,9 +16,9 @@ set(LEVELDB_INSTALL OFF)
 add_subdirectory(third-party/leveldb)
 include_directories(third-party/leveldb/include)
 
-message(STATUS "OpenCV_DIR Path: ${OpenCV_DIR}")
-find_package(OpenCV REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIRS})
+set(SIMPLECV_BUILD_TESTS OFF)
+add_subdirectory(third-party/SimpleCV)
+include_directories(third-party/SimpleCV/include)
 
 include_directories(include)
 include_directories(src)
@@ -35,11 +35,11 @@ add_library(clip SHARED
     src/tokenizer/tokenizer.cpp
 )
 
-target_link_libraries(clip ${OpenCV_LIBS} leveldb dl pthread)
+target_link_libraries(clip SimpleCV::simplecv leveldb dl pthread)
 
 function(build_test test_name source)
     add_executable(${test_name} ${source} tests/utils/cqdm.cpp)
-    target_link_libraries(${test_name} clip)
+    target_link_libraries(${test_name} clip SimpleCV::simplecv)
 endfunction()
 
 build_test(test_ax_api tests/test_ax_api.cpp)

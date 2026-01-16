@@ -145,7 +145,7 @@ public:
         return ret;
     }
 
-    bool encode(cv::Mat image, std::vector<float> &image_features)
+    bool encode(SimpleCV::Mat image, std::vector<float> &image_features)
     {
         if (m_image_encoder == nullptr)
         {

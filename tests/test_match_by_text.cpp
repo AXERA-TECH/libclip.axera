@@ -3,7 +3,7 @@
 #include "utils/timer.hpp"
 #include <fstream>
 #include <cstring>
-#include <opencv2/opencv.hpp>
+#include <SimpleCV.hpp>
 #include "utils/cqdm.h"
 
 int main(int argc, char *argv[])
@@ -76,8 +76,7 @@ int main(int argc, char *argv[])
     std::string image_src = parser.get<std::string>("image");
     std::string text = parser.get<std::string>("text");
 
-    std::vector<std::string> image_paths;
-    cv::glob(image_src + "/*.*", image_paths);
+    std::vector<std::string> image_paths = SimpleCV::glob(image_src + "/*.*");
     auto cqdm = create_cqdm(image_paths.size(), 32);
     for (size_t i = 0; i < image_paths.size(); i++)
     {
@@ -91,13 +90,12 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        cv::Mat src = cv::imread(image_path);
-        cv::cvtColor(src, src, cv::COLOR_BGR2RGB);
+        SimpleCV::Mat src = SimpleCV::imread(image_path, SimpleCV::ColorSpace::RGB);
         clip_image_t image;
         image.data = src.data;
-        image.width = src.cols;
-        image.height = src.rows;
-        image.channels = src.channels();
+        image.width = src.width;
+        image.height = src.height;
+        image.channels = src.channels;
         image.stride = src.step;
 
         timer t;
