@@ -18,14 +18,20 @@ if __name__ == '__main__':
     image_folder = args.image_folder
 
     # 枚举设备
+    dev_type = AxDeviceType.unknown_device
+    dev_id = -1
     devices_info = enum_devices()
     print("可用设备:", devices_info)
     if devices_info['host']['available']:
         print("host device available")
         sys_init(AxDeviceType.host_device, -1)
+        dev_type = AxDeviceType.host_device
+        dev_id = -1
     elif devices_info['devices']['count'] > 0:
         print("axcl device available, use device-0")
         sys_init(AxDeviceType.axcl_device, 0)
+        dev_type = AxDeviceType.axcl_device
+        dev_id = 0
     else:
         raise Exception("No available device")
 
@@ -35,7 +41,9 @@ if __name__ == '__main__':
             'text_encoder_path': args.tenc,
             'image_encoder_path': args.ienc,
             'tokenizer_path': args.vocab,
-            'db_path': args.db_path
+            'db_path': args.db_path,
+            'dev_type': dev_type,
+            'devid': dev_id,
         })
 
 
@@ -59,8 +67,10 @@ if __name__ == '__main__':
         print("匹配结果:", results)
 
     finally:
-        # 反初始化系统
+        import atexit
         if devices_info['host']['available']:
-            sys_deinit(AxDeviceType.host_device, -1)
+            atexit.register(lambda: sys_deinit(AxDeviceType.host_device, -1))
         elif devices_info['devices']['count'] > 0:
-            sys_deinit(AxDeviceType.axcl_device, 0)
+            atexit.register(lambda: sys_deinit(AxDeviceType.axcl_device, 0))
+        
+        

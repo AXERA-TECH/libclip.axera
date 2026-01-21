@@ -21,6 +21,7 @@ struct gInit
 {
     gInit()
     {
+        std::vector<std::string> supported_backends;
         if (getLoader().is_init())
         {
             auto ret = axclInit();
@@ -28,11 +29,23 @@ struct gInit
             {
                 printf("axclInit failed\n");
             }
+            supported_backends.push_back("axcl");
         }
-        else
+
+        if (get_ax_sys_loader().is_init() && get_ax_engine_loader().is_init())
         {
-            printf("unsupport axcl\n");
+            supported_backends.push_back("ax650");
         }
+        printf("supported backends: [");
+        for (int i = 0; i < supported_backends.size(); i++)
+        {
+            printf("%s", supported_backends[i].c_str());
+            if (i < supported_backends.size() - 1)
+            {
+                printf(", ");
+            }
+        }
+        printf("]\n");
     }
 
     ~gInit()

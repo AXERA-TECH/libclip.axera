@@ -5,6 +5,7 @@
 #include <cstring>
 #include <SimpleCV.hpp>
 #include "utils/cqdm.h"
+#include <filesystem>
 
 int main(int argc, char *argv[])
 {
@@ -109,9 +110,11 @@ int main(int argc, char *argv[])
     clip_match_text(handle, text.c_str(), results.data(), topk);
     printf("match text \"%s\" %6.2fms\n", text.c_str(), t.cost());
     printf("|%32s | %6s|\n", "key", "score");
+    std::filesystem::path image_src_path(image_src);
     for (size_t i = 0; i < results.size(); i++)
     {
-        printf("|%32s | %6.2f|\n", (image_src + "/" + results[i].key).c_str(), results[i].score);
+        std::filesystem::path key_path = image_src_path / results[i].key;
+        printf("|%32s | %6.2f|\n", key_path.string().c_str(), results[i].score);
     }
 
     clip_destroy(handle);

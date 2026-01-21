@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
+#if !_WIN32
 #include <dlfcn.h>
+#endif
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
@@ -28,10 +30,10 @@ public:
                 break;
             }
         }
-        if (!handle_)
-        {
-            printf("open libax_sys.so failed\n");
-        }
+        // if (!handle_)
+        // {
+        //     printf("open libax_sys.so failed\n");
+        // }
     }
 
     ~AxSysApiLoader()
@@ -64,6 +66,9 @@ private:
 
     bool open(const std::string &lib_path)
     {
+#if _WIN32
+        return false;
+#else
         handle_ = dlopen(lib_path.c_str(), RTLD_NOW);
         if (!handle_)
         {
@@ -72,11 +77,13 @@ private:
         }
         load_all_symbols();
         return true;
+#endif
     }
 
     template <typename T>
     void load_symbol(T &func, const std::string &symbol_name)
     {
+#if !_WIN32
         dlerror(); // 清除错误信息
         func = reinterpret_cast<T>(dlsym(handle_, symbol_name.c_str()));
         const char *dlsym_error = dlerror();
@@ -86,6 +93,7 @@ private:
             printf("dlsym failed for %s: %s\n", symbol_name.c_str(), dlsym_error);
             func = nullptr;
         }
+#endif
     }
 
     void load_all_symbols()
@@ -117,10 +125,10 @@ public:
                 break;
             }
         }
-        if (!handle_)
-        {
-            printf("open libax_engine.so failed\n");
-        }
+        // if (!handle_)
+        // {
+        //     printf("open libax_engine.so failed\n");
+        // }
     }
 
     ~AxEngineApiLoader()
@@ -165,6 +173,9 @@ private:
 
     bool open(const std::string &lib_path = "/usr/lib/axcl/libaxcl_rt.so")
     {
+#if _WIN32
+        return false;
+#else
         handle_ = dlopen(lib_path.c_str(), RTLD_NOW);
         if (!handle_)
         {
@@ -173,11 +184,13 @@ private:
         }
         load_all_symbols();
         return true;
+#endif
     }
 
     template <typename T>
     void load_symbol(T &func, const std::string &symbol_name)
     {
+#if !_WIN32
         dlerror(); // 清除错误信息
         func = reinterpret_cast<T>(dlsym(handle_, symbol_name.c_str()));
         const char *dlsym_error = dlerror();
@@ -187,6 +200,7 @@ private:
             printf("dlsym failed for %s: %s\n", symbol_name.c_str(), dlsym_error);
             func = nullptr;
         }
+#endif
     }
 
     void load_all_symbols()

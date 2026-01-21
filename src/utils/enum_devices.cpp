@@ -9,18 +9,63 @@
 #include <regex>
 #include <cstring> // For strncpy
 
-bool parse_axcl_smi_output(FILE *fp, ax_devices_t &out)
-{
-    if (!fp)
-        return false;
+#if defined(_WIN32) || defined(_WIN64)
+#define AX_POPEN _popen
+#define AX_PCLOSE _pclose
+#else
+#define AX_POPEN popen
+#define AX_PCLOSE pclose
+#endif
 
-    char line[512];
+static inline void trim_inplace(std::string &s)
+{
+    // 去掉尾部 \r\n 和空白
+    while (!s.empty() && (s.back() == '\n' || s.back() == '\r' || std::isspace((unsigned char)s.back())))
+        s.pop_back();
+
+    // 去掉头部空白
+    size_t i = 0;
+    while (i < s.size() && std::isspace((unsigned char)s[i]))
+        ++i;
+    if (i > 0)
+        s.erase(0, i);
+}
+
+static std::vector<std::string> exec_cmd_lines(const std::string &cmd)
+{
+    using PipeCloser = int (*)(FILE *);
+    std::unique_ptr<FILE, PipeCloser> pipe(AX_POPEN(cmd.c_str(), "r"), AX_PCLOSE);
+    if (!pipe)
+        return {};
+
+    std::array<char, 4096> buf{};
     std::vector<std::string> lines;
 
-    while (fgets(line, sizeof(line), fp))
+    while (std::fgets(buf.data(), (int)buf.size(), pipe.get()))
     {
-        lines.emplace_back(line);
+        std::string line(buf.data());
+        trim_inplace(line);
+        if (!line.empty())
+            lines.push_back(std::move(line));
     }
+    return lines;
+}
+
+static std::string exec_cmd(std::string cmd)
+{
+    auto lines = exec_cmd_lines(cmd);
+    std::stringstream ss;
+    for (const auto &line : lines)
+    {
+        ss << line << '\n';
+    }
+    return ss.str();
+}
+
+bool parse_axcl_smi_output(std::vector<std::string> &lines, ax_devices_t &out)
+{
+    if (lines.empty())
+        return false;
 
     if (lines.size() < 5)
         return false;
@@ -78,42 +123,24 @@ bool parse_axcl_smi_output(FILE *fp, ax_devices_t &out)
 
 bool get_axcl_devices(ax_devices_t *info)
 {
-    FILE *fp = popen("axcl-smi", "r");
-    if (!fp)
+    std::vector<std::string> cmds = {"axcl-smi",
+                                     "C:\\Program Files\\AXCL\\axcl\\out\\axcl_win_x64\\bin\\axcl-smi.exe"};
+    for (const auto &cmd : cmds)
     {
-        std::cerr << "Failed to run axcl-smi." << std::endl;
-        return false;
+        std::vector<std::string> lines = exec_cmd_lines(cmd);
+        bool success = parse_axcl_smi_output(lines, *info);
+        if (success)
+        {
+            return true;
+        }
     }
-
-    bool success = parse_axcl_smi_output(fp, *info);
-    pclose(fp);
-    return success;
+    return false;
 }
 
 static std::vector<std::string> v_libax_sys_so_path = {
     "/soc/lib/libax_sys.so",
     "/opt/lib/libax_sys.so",
     "/usr/lib/libax_sys.so"};
-
-static std::string exec_cmd(std::string cmd)
-{
-    FILE *pipe = popen(cmd.c_str(), "r");
-    if (!pipe)
-    {
-        return "";
-    }
-    char buffer[128];
-    std::string result = "";
-    while (!feof(pipe))
-    {
-        if (fgets(buffer, 128, pipe) != NULL)
-        {
-            result += buffer;
-        }
-    }
-    pclose(pipe);
-    return result;
-}
 
 static bool file_exists(const std::string &name)
 {
