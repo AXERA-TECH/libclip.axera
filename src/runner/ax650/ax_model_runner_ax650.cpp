@@ -4,11 +4,6 @@
 #include <fstream>
 #include <memory>
 #include <fcntl.h>
-#include <sys/mman.h>
-// #include "utilities/file.hpp"
-// #include <ax_ivps_api.h>
-// #include <ax_sys_api.h>
-// #include <ax_engine_api.h>
 
 #include "ax_api_loader.h"
 
@@ -55,50 +50,6 @@ static bool file_exist(const std::string &path)
 }
 
 void print_io_info(std::vector<ax_runner_tensor_t> &input, std::vector<ax_runner_tensor_t> &output);
-
-class MMap
-{
-private:
-    void *_add;
-    int _size;
-
-public:
-    MMap() {}
-    MMap(const char *file)
-    {
-        _add = _mmap(file, &_size);
-    }
-    ~MMap()
-    {
-        munmap(_add, _size);
-    }
-
-    size_t size()
-    {
-        return _size;
-    }
-
-    void *data()
-    {
-        return _add;
-    }
-
-    static void *_mmap(const char *model_file, int *model_size)
-    {
-        auto *file_fp = fopen(model_file, "r");
-        if (!file_fp)
-        {
-            ALOGE("Read Run-Joint model(%s) file failed.\n", model_file);
-            return nullptr;
-        }
-        fseek(file_fp, 0, SEEK_END);
-        *model_size = ftell(file_fp);
-        fclose(file_fp);
-        int fd = open(model_file, O_RDWR, 0644);
-        void *mmap_add = mmap(NULL, *model_size, PROT_WRITE, MAP_SHARED, fd, 0);
-        return mmap_add;
-    }
-};
 
 static bool read_file(const std::string &path, std::vector<char> &data)
 {
@@ -219,7 +170,7 @@ static inline int prepare_io(AX_ENGINE_IO_INFO_T *info, AX_ENGINE_IO_T *io_data,
     io_data->nInputSize = info->nInputSize;
 
     auto ret = 0;
-    for (uint i = 0; i < info->nInputSize; ++i)
+    for (int i = 0; i < info->nInputSize; ++i)
     {
         auto meta = info->pInputs[i];
         auto buffer = &io_data->pInputs[i];
@@ -244,7 +195,7 @@ static inline int prepare_io(AX_ENGINE_IO_INFO_T *info, AX_ENGINE_IO_T *io_data,
 
     io_data->pOutputs = new AX_ENGINE_IO_BUFFER_T[info->nOutputSize];
     io_data->nOutputSize = info->nOutputSize;
-    for (uint i = 0; i < info->nOutputSize; ++i)
+    for (int i = 0; i < info->nOutputSize; ++i)
     {
         auto meta = info->pOutputs[i];
         auto buffer = &io_data->pOutputs[i];

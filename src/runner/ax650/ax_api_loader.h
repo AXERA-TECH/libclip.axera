@@ -38,10 +38,12 @@ public:
 
     ~AxSysApiLoader()
     {
+#if !_WIN32
         if (handle_)
         {
             dlclose(handle_);
         }
+#endif
     }
 
     bool is_init()
@@ -133,10 +135,12 @@ public:
 
     ~AxEngineApiLoader()
     {
+#if !_WIN32
         if (handle_)
         {
             dlclose(handle_);
         }
+#endif
     }
 
     bool is_init()

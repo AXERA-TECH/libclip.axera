@@ -1,10 +1,3 @@
-//
-//  tokenizer.hpp
-//
-//  Created by MNN on 2023/09/25.
-//  ZhaodeWang
-//
-
 #ifndef TOKENIZER_hpp
 #define TOKENIZER_hpp
 
@@ -13,8 +6,10 @@
 #include <string>
 #include <unordered_map>
 #include <iostream>
+#include <cstdint>
 // #include <string_view>
 #include <cstring>
+#include <array>
 class string_view_ {
 public:
     string_view_() : data_(nullptr), size_(0) {}
@@ -77,21 +72,26 @@ public:
     static Tokenizer* createTokenizer(const std::string& filename);
     bool is_stop(int token);
     bool is_special(int token);
+    std::vector<int> get_stop_tokens();
     std::vector<int> encode(const std::string& str);
-    virtual std::string decode(int id) = 0;
+    virtual std::string decode(int id) const = 0;
 protected:
     virtual void load_special(std::ifstream& file);
     virtual bool load_vocab(std::ifstream& file) = 0;
     virtual void encode(const std::string& str, std::vector<int>& ids) = 0;
+    void ensure_special_cache() const;
     std::vector<int> special_tokens_;
     std::vector<int> stop_tokens_;
     std::vector<int> prefix_tokens_;
+    // Cache decoded strings for special tokens to avoid repeated virtual decode() calls.
+    mutable bool special_cache_ready_ = false;
+    mutable std::vector<std::pair<int, std::string>> special_cache_; // {id, decoded string}
 };
 
 class Sentencepiece : public Tokenizer {
 public:
     Sentencepiece() = default;
-    virtual std::string decode(int id) override;
+    virtual std::string decode(int id) const override;
 protected:
     virtual bool load_vocab(std::ifstream& file) override;
     virtual void encode(const std::string& str, std::vector<int>& ids) override;
@@ -143,12 +143,28 @@ private:
 class Tiktoken : public Tokenizer {
 public:
     Tiktoken() = default;
-    virtual std::string decode(int id) override;
+    virtual std::string decode(int id) const override;
 protected:
     virtual bool load_vocab(std::ifstream& file) override;
     virtual void encode(const std::string& str, std::vector<int>& ids) override;
+    // Keep these protected for derived tokenizers (e.g. BertTokenizer) that reuse the vocab.
     std::unordered_map<std::string, int> encoder_;
     std::vector<std::string> decoder_;
+private:
+    struct TrieEdge {
+        unsigned char c;
+        int next;
+    };
+    struct TrieNode {
+        int id = -1;
+        std::vector<TrieEdge> next;
+    };
+    void build_trie();
+    int trie_find_next(int node, unsigned char c) const;
+    int trie_add_next(int node, unsigned char c);
+    std::vector<TrieNode> trie_;
+    size_t max_token_len_ = 0;
+    
 };
 
 class BertTokenizer : public Tiktoken {
@@ -172,14 +188,15 @@ struct hash_pair_wstring {
 using BPERanks = std::unordered_map<std::pair<std::wstring, std::wstring>, int, hash_pair_wstring>;
 public:
     HuggingfaceTokenizer() = default;
-    virtual std::string decode(int id) override;
+    virtual std::string decode(int id) const override;
 protected:
     virtual bool load_vocab(std::ifstream& file) override;
     virtual void encode(const std::string& str, std::vector<int>& ids) override;
 private:
     void bpe(const std::wstring& token, const BPERanks& bpe_ranks, std::vector<std::wstring>* result);
     BPERanks bpe_ranks_;
-    std::unordered_map<uint8_t, wchar_t> b2u_;
+    // Fast byte -> unicode mapping for encoding (covers all 256 possible bytes)
+    std::array<wchar_t, 256> b2u_{};
     std::unordered_map<wchar_t, uint8_t> u2b_;
     std::unordered_map<std::string, int> encoder_;
     std::vector<std::string> decoder_;
