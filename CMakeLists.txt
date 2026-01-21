@@ -35,8 +35,11 @@ add_library(clip SHARED
     src/ax_devices.cpp
     src/tokenizer/tokenizer.cpp
 )
-
-target_link_libraries(clip SimpleCV::simplecv leveldb dl pthread)
+if(WIN32)
+    target_link_libraries(clip SimpleCV::simplecv leveldb)
+else()
+    target_link_libraries(clip SimpleCV::simplecv leveldb dl)
+endif()
 
 function(build_test test_name source)
     add_executable(${test_name} ${source} tests/utils/cqdm.cpp)
