@@ -24,7 +24,7 @@ struct gInit
         std::vector<std::string> supported_backends;
         if (getLoader().is_init())
         {
-            auto ret = axclInit();
+            auto ret = axcl_Init();
             if (ret != 0)
             {
                 printf("axclInit failed\n");
@@ -52,10 +52,10 @@ struct gInit
     {
         if (getLoader().is_init())
         {
-            auto ret = axclFinalize();
+            auto ret = axcl_Finalize();
             if (ret != 0)
             {
-                printf("axclFinalize failed\n");
+                printf("axcl_Finalize failed\n");
             }
         }
     }

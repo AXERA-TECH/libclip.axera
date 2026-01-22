@@ -7,16 +7,15 @@
 
 #include "ax_api_loader.h"
 
-static AxSysApiLoader ax_sys_loader;
-static AxEngineApiLoader ax_engine_loader;
-
 AxSysApiLoader &get_ax_sys_loader()
 {
+    static AxSysApiLoader ax_sys_loader;
     return ax_sys_loader;
 }
 
 AxEngineApiLoader &get_ax_engine_loader()
 {
+    static AxEngineApiLoader ax_engine_loader;
     return ax_engine_loader;
 }
 
@@ -81,7 +80,7 @@ void free_io_index(AX_ENGINE_IO_BUFFER_T *io_buf, int index)
     for (int i = 0; i < index; ++i)
     {
         AX_ENGINE_IO_BUFFER_T *pBuf = io_buf + i;
-        ax_sys_loader.AX_SYS_MemFree(pBuf->phyAddr, pBuf->pVirAddr);
+        get_ax_sys_loader().AX_SYS_MemFree(pBuf->phyAddr, pBuf->pVirAddr);
     }
 }
 
@@ -90,12 +89,12 @@ void free_io(AX_ENGINE_IO_T *io)
     for (size_t j = 0; j < io->nInputSize; ++j)
     {
         AX_ENGINE_IO_BUFFER_T *pBuf = io->pInputs + j;
-        ax_sys_loader.AX_SYS_MemFree(pBuf->phyAddr, pBuf->pVirAddr);
+        get_ax_sys_loader().AX_SYS_MemFree(pBuf->phyAddr, pBuf->pVirAddr);
     }
     for (size_t j = 0; j < io->nOutputSize; ++j)
     {
         AX_ENGINE_IO_BUFFER_T *pBuf = io->pOutputs + j;
-        ax_sys_loader.AX_SYS_MemFree(pBuf->phyAddr, pBuf->pVirAddr);
+        get_ax_sys_loader().AX_SYS_MemFree(pBuf->phyAddr, pBuf->pVirAddr);
     }
     delete[] io->pInputs;
     delete[] io->pOutputs;
@@ -176,11 +175,11 @@ static inline int prepare_io(AX_ENGINE_IO_INFO_T *info, AX_ENGINE_IO_T *io_data,
         auto buffer = &io_data->pInputs[i];
         if (strategy.first == AX_ENGINE_ABST_CACHED)
         {
-            ret = ax_sys_loader.AX_SYS_MemAllocCached((AX_U64 *)(&buffer->phyAddr), &buffer->pVirAddr, meta.nSize, AX_CMM_ALIGN_SIZE, (const AX_S8 *)(AX_CMM_SESSION_NAME));
+            ret = get_ax_sys_loader().AX_SYS_MemAllocCached((AX_U64 *)(&buffer->phyAddr), &buffer->pVirAddr, meta.nSize, AX_CMM_ALIGN_SIZE, (const AX_S8 *)(AX_CMM_SESSION_NAME));
         }
         else
         {
-            ret = ax_sys_loader.AX_SYS_MemAlloc((AX_U64 *)(&buffer->phyAddr), &buffer->pVirAddr, meta.nSize, AX_CMM_ALIGN_SIZE, (const AX_S8 *)(AX_CMM_SESSION_NAME));
+            ret = get_ax_sys_loader().AX_SYS_MemAlloc((AX_U64 *)(&buffer->phyAddr), &buffer->pVirAddr, meta.nSize, AX_CMM_ALIGN_SIZE, (const AX_S8 *)(AX_CMM_SESSION_NAME));
         }
 
         if (ret != 0)
@@ -202,11 +201,11 @@ static inline int prepare_io(AX_ENGINE_IO_INFO_T *info, AX_ENGINE_IO_T *io_data,
         buffer->nSize = meta.nSize;
         if (strategy.second == AX_ENGINE_ABST_CACHED)
         {
-            ret = ax_sys_loader.AX_SYS_MemAllocCached((AX_U64 *)(&buffer->phyAddr), &buffer->pVirAddr, meta.nSize, AX_CMM_ALIGN_SIZE, (const AX_S8 *)(AX_CMM_SESSION_NAME));
+            ret = get_ax_sys_loader().AX_SYS_MemAllocCached((AX_U64 *)(&buffer->phyAddr), &buffer->pVirAddr, meta.nSize, AX_CMM_ALIGN_SIZE, (const AX_S8 *)(AX_CMM_SESSION_NAME));
         }
         else
         {
-            ret = ax_sys_loader.AX_SYS_MemAlloc((AX_U64 *)(&buffer->phyAddr), &buffer->pVirAddr, meta.nSize, AX_CMM_ALIGN_SIZE, (const AX_S8 *)(AX_CMM_SESSION_NAME));
+            ret = get_ax_sys_loader().AX_SYS_MemAlloc((AX_U64 *)(&buffer->phyAddr), &buffer->pVirAddr, meta.nSize, AX_CMM_ALIGN_SIZE, (const AX_S8 *)(AX_CMM_SESSION_NAME));
         }
         if (ret != 0)
         {
@@ -245,7 +244,7 @@ int ax_runner_ax650::init(const void *model_data, unsigned int model_size, int d
 
     // 3. create handle
 
-    ret = ax_engine_loader.AX_ENGINE_CreateHandle(&m_handle->handle, model_data, model_size);
+    ret = get_ax_engine_loader().AX_ENGINE_CreateHandle(&m_handle->handle, model_data, model_size);
     if (0 != ret)
     {
         ALOGE("AX_ENGINE_CreateHandle");
@@ -254,13 +253,13 @@ int ax_runner_ax650::init(const void *model_data, unsigned int model_size, int d
     // fprintf(stdout, "Engine creating handle is done.\n");
 
     // 4. create context
-    ret = ax_engine_loader.AX_ENGINE_CreateContext(m_handle->handle);
+    ret = get_ax_engine_loader().AX_ENGINE_CreateContext(m_handle->handle);
     if (0 != ret)
     {
         ALOGE("AX_ENGINE_CreateContext");
         return ret;
     }
-    ret = ax_engine_loader.AX_ENGINE_CreateContextV2(m_handle->handle, &m_handle->context);
+    ret = get_ax_engine_loader().AX_ENGINE_CreateContextV2(m_handle->handle, &m_handle->context);
     if (0 != ret)
     {
         ALOGE("AX_ENGINE_CreateContextV2");
@@ -270,7 +269,7 @@ int ax_runner_ax650::init(const void *model_data, unsigned int model_size, int d
 
     // 5. set io
     AX_U32 io_count = 0;
-    ret = ax_engine_loader.AX_ENGINE_GetGroupIOInfoCount(m_handle->handle, &io_count);
+    ret = get_ax_engine_loader().AX_ENGINE_GetGroupIOInfoCount(m_handle->handle, &io_count);
     if (0 != ret)
     {
         ALOGE("AX_ENGINE_GetGroupIOInfoCount");
@@ -286,7 +285,7 @@ int ax_runner_ax650::init(const void *model_data, unsigned int model_size, int d
     for (int grpid = 0; grpid < io_count; grpid++)
     {
         AX_ENGINE_IO_INFO_T *io_info = nullptr;
-        ret = ax_engine_loader.AX_ENGINE_GetGroupIOInfo(m_handle->handle, grpid, &io_info);
+        ret = get_ax_engine_loader().AX_ENGINE_GetGroupIOInfo(m_handle->handle, grpid, &io_info);
         if (0 != ret)
         {
             ALOGE("AX_ENGINE_GetIOInfo");
@@ -375,16 +374,16 @@ void ax_runner_ax650::deinit()
         {
             free_io(&m_handle->io_data[i]);
         }
-        ax_engine_loader.AX_ENGINE_DestroyHandle(m_handle->handle);
+        get_ax_engine_loader().AX_ENGINE_DestroyHandle(m_handle->handle);
     }
     delete m_handle;
     m_handle = nullptr;
-    ax_engine_loader.AX_ENGINE_Deinit();
+    get_ax_engine_loader().AX_ENGINE_Deinit();
 }
 
 int ax_runner_ax650::set_affinity(int id)
 {
-    return ax_engine_loader.AX_ENGINE_SetAffinity(m_handle->handle, id);
+    return get_ax_engine_loader().AX_ENGINE_SetAffinity(m_handle->handle, id);
 }
 
 // int ax_runner_ax650::mem_sync_input(int idx)
@@ -423,22 +422,22 @@ int ax_runner_ax650::set_affinity(int id)
 
 int ax_runner_ax650::inference()
 {
-    int ret = ax_engine_loader.AX_ENGINE_RunSync(m_handle->handle, &m_handle->io_data[0]);
+    int ret = get_ax_engine_loader().AX_ENGINE_RunSync(m_handle->handle, &m_handle->io_data[0]);
     for (size_t i = 0; i < get_num_outputs(); i++)
     {
         auto &tensor = get_output(i);
-        ax_sys_loader.AX_SYS_MinvalidateCache(tensor.phyAddr, tensor.pVirAddr, tensor.nSize);
+        get_ax_sys_loader().AX_SYS_MinvalidateCache(tensor.phyAddr, tensor.pVirAddr, tensor.nSize);
     }
     return ret;
 }
 int ax_runner_ax650::inference(int grpid)
 {
-    int ret = ax_engine_loader.AX_ENGINE_RunGroupIOSync(m_handle->handle, m_handle->context, grpid, &m_handle->io_data[grpid]);
+    int ret = get_ax_engine_loader().AX_ENGINE_RunGroupIOSync(m_handle->handle, m_handle->context, grpid, &m_handle->io_data[grpid]);
 
     for (size_t i = 0; i < get_num_outputs(); i++)
     {
         auto &tensor = get_output(grpid, i);
-        ax_sys_loader.AX_SYS_MinvalidateCache(tensor.phyAddr, tensor.pVirAddr, tensor.nSize);
+        get_ax_sys_loader().AX_SYS_MinvalidateCache(tensor.phyAddr, tensor.pVirAddr, tensor.nSize);
     }
     return ret;
 }

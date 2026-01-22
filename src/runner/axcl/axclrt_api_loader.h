@@ -18,13 +18,19 @@
 #include <axcl_rt_type.h>
 #include <axcl_rt_engine_type.h>
 
+#ifdef AXCL_USE_STATIC_LINK
+#include <axcl.h>
+#endif
+
 class AxclApiLoader
 {
 public:
     explicit AxclApiLoader()
     {
+#ifndef AXCL_USE_STATIC_LINK
 #if AXCL_PLATFORM_WINDOWS
         static std::vector<std::string> v_libaxcl_rt_path = {
+            "./libaxcl_rt.dll",
             "C:/Program Files/AXCL/axcl/out/axcl_win_x64/bin/libaxcl_rt.dll"};
 #else
         static std::vector<std::string> v_libaxcl_rt_path = {
@@ -45,24 +51,31 @@ public:
         {
             std::string err = last_error_string();
             std::fprintf(stderr, "open axcl runtime library failed. last_error=%s\n", err.c_str());
+            return;
         }
-        else
-        {
-            load_all_symbols();
-        }
+#endif
+
+        load_all_symbols();
     }
 
     ~AxclApiLoader()
     {
+#ifndef AXCL_USE_STATIC_LINK
         if (handle_)
         {
             close_library(handle_);
             handle_ = nullptr;
         }
+#endif
     }
 
     bool is_init() const
     {
+#ifdef AXCL_USE_STATIC_LINK
+        return true;
+#else
+        return handle_ != nullptr;
+#endif
         return handle_ != nullptr;
     }
 
@@ -82,7 +95,7 @@ public:
     axclError (*axclrtGetDeviceList)(axclrtDeviceList *deviceList) = nullptr;
     axclError (*axclrtSynchronizeDevice)() = nullptr;
     // axclError (*axclrtGetDeviceProperties)(int32_t deviceId, axclrtDeviceProperties *properties) = nullptr;
-    axclError (*axclrtRebootDevice)(int32_t deviceId) = nullptr;
+    // axclError (*axclrtRebootDevice)(int32_t deviceId) = nullptr;
 
     axclError (*axclrtMalloc)(void **devPtr, size_t size, axclrtMemMallocPolicy policy) = nullptr;
     axclError (*axclrtMallocCached)(void **devPtr, size_t size, axclrtMemMallocPolicy policy) = nullptr;
@@ -155,10 +168,32 @@ private:
     std::string loaded_path_;
 
 private:
+#if AXCL_PLATFORM_WINDOWS
+    static std::wstring to_wstring_utf8(const std::string &s)
+    {
+        if (s.empty())
+            return L"";
+        int len = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, nullptr, 0);
+        if (len <= 0)
+        {
+            // fallback: 按本地代码页
+            len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), -1, nullptr, 0);
+            if (len <= 0)
+                return L"";
+            std::wstring ws(len - 1, L'\0');
+            MultiByteToWideChar(CP_ACP, 0, s.c_str(), -1, ws.data(), len);
+            return ws;
+        }
+        std::wstring ws(len - 1, L'\0');
+        MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, ws.data(), len);
+        return ws;
+    }
+#endif
+
+#ifndef AXCL_USE_STATIC_LINK
     static LibHandle open_library(const std::string &path)
     {
 #if AXCL_PLATFORM_WINDOWS
-        // 使用 ANSI 版本，传入 std::string
         return ::LoadLibraryA(path.c_str());
 #else
         return ::dlopen(path.c_str(), RTLD_NOW);
@@ -180,22 +215,14 @@ private:
         DWORD err = ::GetLastError();
         if (err == 0)
             return "no error";
-
         LPSTR buf = nullptr;
         DWORD size = ::FormatMessageA(
             FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-            nullptr,
-            err,
-            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            (LPSTR)&buf,
-            0,
-            nullptr);
-
+            nullptr, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            (LPSTR)&buf, 0, nullptr);
         std::string msg = (size && buf) ? std::string(buf, size) : std::string("FormatMessage failed");
         if (buf)
             ::LocalFree(buf);
-
-        // 去掉尾部换行
         while (!msg.empty() && (msg.back() == '\r' || msg.back() == '\n'))
             msg.pop_back();
         return msg;
@@ -206,35 +233,100 @@ private:
     }
 
     template <typename T>
-    void load_symbol(T &func, const std::string &symbol_name)
+    void load_symbol(T &func, const char *symbol_name)
     {
 #if AXCL_PLATFORM_WINDOWS
-        // 清除上一次错误（GetProcAddress 失败不一定会设置 last error，但通常会）
         ::SetLastError(0);
-
-        FARPROC p = ::GetProcAddress(handle_, symbol_name.c_str());
+        FARPROC p = ::GetProcAddress(handle_, symbol_name);
         if (!p)
         {
             func = nullptr;
-            std::string err = last_error_string();
-            std::fprintf(stderr, "GetProcAddress failed for %s: %s\n", symbol_name.c_str(), err.c_str());
             return;
         }
         func = reinterpret_cast<T>(p);
 #else
-        ::dlerror(); // 清除错误信息
-        func = reinterpret_cast<T>(::dlsym(handle_, symbol_name.c_str()));
-        const char *dlsym_error = ::dlerror();
-        if (dlsym_error)
+        ::dlerror();
+        func = reinterpret_cast<T>(::dlsym(handle_, symbol_name));
+        if (::dlerror())
         {
             func = nullptr;
-            std::fprintf(stderr, "dlsym failed for %s: %s\n", symbol_name.c_str(), dlsym_error);
         }
 #endif
     }
+#endif // !AXCL_USE_STATIC_LINK
 
     void load_all_symbols()
     {
+#ifdef AXCL_USE_STATIC_LINK
+        axclInit = &::axclInit;
+        axclFinalize = &::axclFinalize;
+        axclrtSetDevice = &::axclrtSetDevice;
+        axclrtResetDevice = &::axclrtResetDevice;
+        axclrtGetDevice = &::axclrtGetDevice;
+        axclrtGetDeviceCount = &::axclrtGetDeviceCount;
+        axclrtGetDeviceList = &::axclrtGetDeviceList;
+        axclrtSynchronizeDevice = &::axclrtSynchronizeDevice;
+        // axclrtRebootDevice = &::axclrtRebootDevice;
+        axclrtMalloc = &::axclrtMalloc;
+        axclrtMallocCached = &::axclrtMallocCached;
+        axclrtFree = &::axclrtFree;
+        axclrtMemFlush = &::axclrtMemFlush;
+        axclrtMemInvalidate = &::axclrtMemInvalidate;
+        axclrtMallocHost = &::axclrtMallocHost;
+        axclrtFreeHost = &::axclrtFreeHost;
+        axclrtMemset = &::axclrtMemset;
+        axclrtMemcpy = &::axclrtMemcpy;
+        axclrtMemcmp = &::axclrtMemcmp;
+        axclrtEngineInit = &::axclrtEngineInit;
+        axclrtEngineGetVNpuKind = &::axclrtEngineGetVNpuKind;
+        axclrtEngineFinalize = &::axclrtEngineFinalize;
+        axclrtEngineLoadFromFile = &::axclrtEngineLoadFromFile;
+        axclrtEngineLoadFromMem = &::axclrtEngineLoadFromMem;
+        axclrtEngineUnload = &::axclrtEngineUnload;
+        axclrtEngineGetModelCompilerVersion = &::axclrtEngineGetModelCompilerVersion;
+        axclrtEngineSetAffinity = &::axclrtEngineSetAffinity;
+        axclrtEngineGetAffinity = &::axclrtEngineGetAffinity;
+        axclrtEngineSetContextAffinity = &::axclrtEngineSetContextAffinity;
+        axclrtEngineGetContextAffinity = &::axclrtEngineGetContextAffinity;
+        axclrtEngineGetUsage = &::axclrtEngineGetUsage;
+        axclrtEngineGetUsageFromMem = &::axclrtEngineGetUsageFromMem;
+        axclrtEngineGetUsageFromModelId = &::axclrtEngineGetUsageFromModelId;
+        axclrtEngineGetModelType = &::axclrtEngineGetModelType;
+        axclrtEngineGetModelTypeFromMem = &::axclrtEngineGetModelTypeFromMem;
+        axclrtEngineGetModelTypeFromModelId = &::axclrtEngineGetModelTypeFromModelId;
+        axclrtEngineGetIOInfo = &::axclrtEngineGetIOInfo;
+        axclrtEngineDestroyIOInfo = &::axclrtEngineDestroyIOInfo;
+        axclrtEngineGetShapeGroupsCount = &::axclrtEngineGetShapeGroupsCount;
+        axclrtEngineGetNumInputs = &::axclrtEngineGetNumInputs;
+        axclrtEngineGetNumOutputs = &::axclrtEngineGetNumOutputs;
+        axclrtEngineGetInputSizeByIndex = &::axclrtEngineGetInputSizeByIndex;
+        axclrtEngineGetOutputSizeByIndex = &::axclrtEngineGetOutputSizeByIndex;
+        axclrtEngineGetInputNameByIndex = &::axclrtEngineGetInputNameByIndex;
+        axclrtEngineGetOutputNameByIndex = &::axclrtEngineGetOutputNameByIndex;
+        axclrtEngineGetInputIndexByName = &::axclrtEngineGetInputIndexByName;
+        axclrtEngineGetOutputIndexByName = &::axclrtEngineGetOutputIndexByName;
+        axclrtEngineGetInputDims = &::axclrtEngineGetInputDims;
+        axclrtEngineGetInputDataType = &::axclrtEngineGetInputDataType;
+        axclrtEngineGetOutputDataType = &::axclrtEngineGetOutputDataType;
+        axclrtEngineGetInputDataLayout = &::axclrtEngineGetInputDataLayout;
+        axclrtEngineGetOutputDataLayout = &::axclrtEngineGetOutputDataLayout;
+        axclrtEngineGetOutputDims = &::axclrtEngineGetOutputDims;
+        axclrtEngineCreateIO = &::axclrtEngineCreateIO;
+        axclrtEngineDestroyIO = &::axclrtEngineDestroyIO;
+        axclrtEngineSetInputBufferByIndex = &::axclrtEngineSetInputBufferByIndex;
+        axclrtEngineSetOutputBufferByIndex = &::axclrtEngineSetOutputBufferByIndex;
+        axclrtEngineSetInputBufferByName = &::axclrtEngineSetInputBufferByName;
+        axclrtEngineSetOutputBufferByName = &::axclrtEngineSetOutputBufferByName;
+        axclrtEngineGetInputBufferByIndex = &::axclrtEngineGetInputBufferByIndex;
+        axclrtEngineGetOutputBufferByIndex = &::axclrtEngineGetOutputBufferByIndex;
+        axclrtEngineGetInputBufferByName = &::axclrtEngineGetInputBufferByName;
+        axclrtEngineGetOutputBufferByName = &::axclrtEngineGetOutputBufferByName;
+        axclrtEngineSetDynamicBatchSize = &::axclrtEngineSetDynamicBatchSize;
+        axclrtEngineCreateContext = &::axclrtEngineCreateContext;
+        axclrtEngineExecute = &::axclrtEngineExecute;
+        axclrtEngineExecuteAsync = &::axclrtEngineExecuteAsync;
+
+#else
         load_symbol(axclInit, "axclInit");
         load_symbol(axclFinalize, "axclFinalize");
 
@@ -245,7 +337,7 @@ private:
         load_symbol(axclrtGetDeviceList, "axclrtGetDeviceList");
         load_symbol(axclrtSynchronizeDevice, "axclrtSynchronizeDevice");
         // load_symbol(axclrtGetDeviceProperties, "axclrtGetDeviceProperties");
-        load_symbol(axclrtRebootDevice, "axclrtRebootDevice");
+        // load_symbol(axclrtRebootDevice, "axclrtRebootDevice");
 
         load_symbol(axclrtMalloc, "axclrtMalloc");
         load_symbol(axclrtMallocCached, "axclrtMallocCached");
@@ -306,5 +398,6 @@ private:
         load_symbol(axclrtEngineCreateContext, "axclrtEngineCreateContext");
         load_symbol(axclrtEngineExecute, "axclrtEngineExecute");
         load_symbol(axclrtEngineExecuteAsync, "axclrtEngineExecuteAsync");
+#endif
     }
 };

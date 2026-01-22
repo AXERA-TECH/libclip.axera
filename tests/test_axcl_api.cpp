@@ -5,7 +5,7 @@
 
 int main()
 {
-    auto ret = axclInit();
+    auto ret = axcl_Init();
     if (ret != 0)
     {
         printf("axclInit failed\n");
@@ -27,6 +27,6 @@ int main()
     runner.deinit();
 
     axcl_Dev_Exit(0);
-    axclFinalize();
+    axcl_Finalize();
     return 0;
 }

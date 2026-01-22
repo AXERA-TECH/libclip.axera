@@ -21,6 +21,28 @@ set(SIMPLECV_BUILD_TESTS OFF)
 add_subdirectory(third-party/SimpleCV)
 include_directories(third-party/SimpleCV/include)
 
+option(AXCL_USE_STATIC_LINK "Use static link for axcl" OFF)
+
+# 如果用户没有显式指定，就在 Windows 上默认开启
+if(WIN32 AND NOT DEFINED AXCL_USE_STATIC_LINK)
+    set(AXCL_USE_STATIC_LINK ON)
+endif()
+
+message(STATUS "AXCL_USE_STATIC_LINK: ${AXCL_USE_STATIC_LINK}")
+
+if(AXCL_USE_STATIC_LINK)
+    if (AXCL_DIR)
+        message(STATUS "AXCL_DIR Path: ${AXCL_DIR}")
+        include_directories(${AXCL_DIR}/include)
+        link_directories(${AXCL_DIR}/lib)
+        include_directories(${AXCL_DIR}/include/axcl)
+        link_directories(${AXCL_DIR}/lib/axcl)
+    else()
+        include_directories(/usr/include/axcl/)
+        link_directories(/usr/lib/axcl/)
+    endif()
+endif()
+
 include_directories(include)
 include_directories(src)
 include_directories(src/utils)
@@ -35,6 +57,12 @@ add_library(clip SHARED
     src/ax_devices.cpp
     src/tokenizer/tokenizer.cpp
 )
+
+if(AXCL_USE_STATIC_LINK)
+    target_compile_definitions(clip PRIVATE AXCL_USE_STATIC_LINK)
+    target_link_libraries(clip axcl_rt)
+endif()
+
 if(WIN32)
     target_link_libraries(clip SimpleCV::simplecv leveldb)
 else()

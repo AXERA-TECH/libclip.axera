@@ -124,7 +124,7 @@ bool parse_axcl_smi_output(std::vector<std::string> &lines, ax_devices_t &out)
 bool get_axcl_devices(ax_devices_t *info)
 {
     std::vector<std::string> cmds = {"axcl-smi",
-                                     "C:\\Program Files\\AXCL\\axcl\\out\\axcl_win_x64\\bin\\axcl-smi.exe"};
+                                     "C:/Program Files/AXCL/axcl/out/axcl_win_x64/bin/axcl-smi.exe"};
     for (const auto &cmd : cmds)
     {
         std::vector<std::string> lines = exec_cmd_lines(cmd);

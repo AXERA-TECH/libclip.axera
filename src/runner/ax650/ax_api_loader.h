@@ -175,7 +175,7 @@ public:
 private:
     void *handle_ = nullptr;
 
-    bool open(const std::string &lib_path = "/usr/lib/axcl/libaxcl_rt.so")
+    bool open(const std::string &lib_path)
     {
 #if _WIN32
         return false;

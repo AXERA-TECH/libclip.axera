@@ -6,8 +6,8 @@
 extern "C"
 {
 #endif
-    axclError axclInit();
-    axclError axclFinalize();
+    axclError axcl_Init();
+    axclError axcl_Finalize();
 
     axclError axcl_Dev_Init(int devid);
     bool axcl_Dev_IsInit(int devid);

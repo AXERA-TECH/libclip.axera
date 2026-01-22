@@ -17,12 +17,12 @@ AxclApiLoader &getLoader()
     return gloader;
 }
 
-axclError axclInit()
+axclError axcl_Init()
 {
     return getLoader().axclInit(0);
 }
 
-axclError axclFinalize()
+axclError axcl_Finalize()
 {
     return getLoader().axclFinalize();
 }
