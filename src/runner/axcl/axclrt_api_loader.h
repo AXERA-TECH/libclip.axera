@@ -20,6 +20,7 @@
 
 #ifdef AXCL_USE_STATIC_LINK
 #include <axcl.h>
+#pragma message("AXCL_USE_STATIC_LINK enabled")
 #endif
 
 class AxclApiLoader
@@ -76,7 +77,6 @@ public:
 #else
         return handle_ != nullptr;
 #endif
-        return handle_ != nullptr;
     }
 
     const std::string &loaded_path() const
