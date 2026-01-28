@@ -1,6 +1,5 @@
 #pragma once
 #include "CLIPImageEncoder.hpp"
-#include "runner/ax650/ax_model_runner_ax650.hpp"
 #include "runner/axcl/ax_model_runner_axcl.hpp"
 #include "mmap.hpp"
 
@@ -20,28 +19,14 @@ public:
 
         MMap image_mmap(init_info->image_encoder_path);
 
-        if (init_info->dev_type == ax_devive_e::host_device)
+        m_encoder = std::make_shared<ax_runner_axcl>();
+        auto ret = m_encoder->init(image_mmap.data(), image_mmap.size(), init_info->devid);
+        if (ret != 0)
         {
-
-            m_encoder = std::make_shared<ax_runner_ax650>();
-            auto ret = m_encoder->init(image_mmap.data(), image_mmap.size(), -1);
-            if (ret != 0)
-            {
-                printf("text encoder init failed\n");
-
-                return false;
-            }
+            printf("text encoder init failed\n");
+            return false;
         }
-        else if (init_info->dev_type == ax_devive_e::axcl_device)
-        {
-            m_encoder = std::make_shared<ax_runner_axcl>();
-            auto ret = m_encoder->init(image_mmap.data(), image_mmap.size(), init_info->devid);
-            if (ret != 0)
-            {
-                printf("text encoder init failed\n");
-                return false;
-            }
-        }
+
         nchw = m_encoder->get_input(0).vShape[1] == 3;
         if (nchw)
         {

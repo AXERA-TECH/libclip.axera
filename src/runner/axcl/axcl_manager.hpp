@@ -8,11 +8,9 @@
 #include <atomic>
 #include <future>
 #include <chrono>
-
-#include "axclrt_api_loader.h"
+#include <axcl.h>
 #include "sample_log.h"
 
-AxclApiLoader &getLoader();
 
 class AXCLWorker
 {
@@ -31,7 +29,7 @@ private:
         ALOGI("AXCLWorker start with devid %d", devid);
 
         axclrtDeviceList lst;
-        if (const auto ret = getLoader().axclrtGetDeviceList(&lst); 0 != ret || 0 == lst.num)
+        if (const auto ret = axclrtGetDeviceList(&lst); 0 != ret || 0 == lst.num)
         {
             ALOGE("Get AXCL device failed{0x%8x}, find total %d device.", ret, lst.num);
             initPromise.set_value(false); // 初始化失败
@@ -46,15 +44,15 @@ private:
 
         // ALOGI("AXCLWorker start with devidx-%d, bus-id-%d", devidx, lst.devices[devidx]);
 
-        if (const auto ret = getLoader().axclrtSetDevice(lst.devices[devid]); 0 != ret)
+        if (const auto ret = axclrtSetDevice(lst.devices[devid]); 0 != ret)
         {
             ALOGE("Set AXCL device failed{0x%8x}.", ret);
             initPromise.set_value(false); // 初始化失败
             return;
         }
-        if (const auto ret = getLoader().axclrtEngineInit(AXCL_VNPU_DISABLE); 0 != ret)
+        if (const auto ret = axclrtEngineInit(AXCL_VNPU_DISABLE); 0 != ret)
         {
-            ALOGE("getLoader().axclrtEngineInit %d", ret);
+            ALOGE("axclrtEngineInit %d", ret);
             initPromise.set_value(false); // 初始化失败
             return;
         }
@@ -109,240 +107,240 @@ private:
 
     axclError axclrtMalloc_func(void **devPtr, size_t size, axclrtMemMallocPolicy policy)
     {
-        return getLoader().axclrtMalloc(devPtr, size, policy);
+        return axclrtMalloc(devPtr, size, policy);
     }
     axclError axclrtMallocCached_func(void **devPtr, size_t size, axclrtMemMallocPolicy policy)
     {
-        return getLoader().axclrtMallocCached(devPtr, size, policy);
+        return axclrtMallocCached(devPtr, size, policy);
     }
     axclError axclrtFree_func(void *devPtr)
     {
-        return getLoader().axclrtFree(devPtr);
+        return axclrtFree(devPtr);
     }
     axclError axclrtMemFlush_func(void *devPtr, size_t size)
     {
-        return getLoader().axclrtMemFlush(devPtr, size);
+        return axclrtMemFlush(devPtr, size);
     }
     axclError axclrtMemInvalidate_func(void *devPtr, size_t size)
     {
-        return getLoader().axclrtMemInvalidate(devPtr, size);
+        return axclrtMemInvalidate(devPtr, size);
     }
     axclError axclrtMallocHost_func(void **hostPtr, size_t size)
     {
-        return getLoader().axclrtMallocHost(hostPtr, size);
+        return axclrtMallocHost(hostPtr, size);
     }
     axclError axclrtFreeHost_func(void *hostPtr)
     {
-        return getLoader().axclrtFreeHost(hostPtr);
+        return axclrtFreeHost(hostPtr);
     }
     axclError axclrtMemset_func(void *devPtr, uint8_t value, size_t count)
     {
-        return getLoader().axclrtMemset(devPtr, value, count);
+        return axclrtMemset(devPtr, value, count);
     }
     axclError axclrtMemcpy_func(void *dstPtr, const void *srcPtr, size_t count, axclrtMemcpyKind kind)
     {
-        return getLoader().axclrtMemcpy(dstPtr, srcPtr, count, kind);
+        return axclrtMemcpy(dstPtr, srcPtr, count, kind);
     }
     axclError axclrtMemcmp_func(const void *devPtr1, const void *devPtr2, size_t count)
     {
-        return getLoader().axclrtMemcmp(devPtr1, devPtr2, count);
+        return axclrtMemcmp(devPtr1, devPtr2, count);
     }
 
     // ────────── 以下为各 API 的内部实现（私有部分，后缀 _func） ──────────
     // 1. axclrtEngineLoadFromFile
     axclError axclrtEngineLoadFromFile_func(const char *modelPath, uint64_t *modelId)
     {
-        return getLoader().axclrtEngineLoadFromFile(modelPath, modelId);
+        return axclrtEngineLoadFromFile(modelPath, modelId);
     }
     // 2. axclrtEngineLoadFromMem
     axclError axclrtEngineLoadFromMem_func(const void *model, uint64_t modelSize, uint64_t *modelId)
     {
-        return getLoader().axclrtEngineLoadFromMem(model, modelSize, modelId);
+        return axclrtEngineLoadFromMem(model, modelSize, modelId);
     }
     // 3. axclrtEngineUnload
     axclError axclrtEngineUnload_func(uint64_t modelId)
     {
-        return getLoader().axclrtEngineUnload(modelId);
+        return axclrtEngineUnload(modelId);
     }
     // 4. axclrtEngineGetModelCompilerVersion
     const char *axclrtEngineGetModelCompilerVersion_func(uint64_t modelId)
     {
-        return getLoader().axclrtEngineGetModelCompilerVersion(modelId);
+        return axclrtEngineGetModelCompilerVersion(modelId);
     }
     // 5. axclrtEngineSetAffinity
     axclError axclrtEngineSetAffinity_func(uint64_t modelId, axclrtEngineSet set)
     {
-        return getLoader().axclrtEngineSetAffinity(modelId, set);
+        return axclrtEngineSetAffinity(modelId, set);
     }
     // 6. axclrtEngineGetAffinity
     axclError axclrtEngineGetAffinity_func(uint64_t modelId, axclrtEngineSet *set)
     {
-        return getLoader().axclrtEngineGetAffinity(modelId, set);
+        return axclrtEngineGetAffinity(modelId, set);
     }
     // 7. axclrtEngineGetUsage
     axclError axclrtEngineGetUsage_func(const char *modelPath, int64_t *sysSize, int64_t *cmmSize)
     {
-        return getLoader().axclrtEngineGetUsage(modelPath, sysSize, cmmSize);
+        return axclrtEngineGetUsage(modelPath, sysSize, cmmSize);
     }
     // 8. axclrtEngineGetUsageFromMem
     axclError axclrtEngineGetUsageFromMem_func(const void *model, uint64_t modelSize, int64_t *sysSize, int64_t *cmmSize)
     {
-        return getLoader().axclrtEngineGetUsageFromMem(model, modelSize, sysSize, cmmSize);
+        return axclrtEngineGetUsageFromMem(model, modelSize, sysSize, cmmSize);
     }
     // 9. axclrtEngineGetUsageFromModelId
     axclError axclrtEngineGetUsageFromModelId_func(uint64_t modelId, int64_t *sysSize, int64_t *cmmSize)
     {
-        return getLoader().axclrtEngineGetUsageFromModelId(modelId, sysSize, cmmSize);
+        return axclrtEngineGetUsageFromModelId(modelId, sysSize, cmmSize);
     }
     // 10. axclrtEngineGetModelType
     axclError axclrtEngineGetModelType_func(const char *modelPath, axclrtEngineModelKind *modelType)
     {
-        return getLoader().axclrtEngineGetModelType(modelPath, modelType);
+        return axclrtEngineGetModelType(modelPath, modelType);
     }
     // 11. axclrtEngineGetModelTypeFromMem
     axclError axclrtEngineGetModelTypeFromMem_func(const void *model, uint64_t modelSize, axclrtEngineModelKind *modelType)
     {
-        return getLoader().axclrtEngineGetModelTypeFromMem(model, modelSize, modelType);
+        return axclrtEngineGetModelTypeFromMem(model, modelSize, modelType);
     }
     // 12. axclrtEngineGetModelTypeFromModelId
     axclError axclrtEngineGetModelTypeFromModelId_func(uint64_t modelId, axclrtEngineModelKind *modelType)
     {
-        return getLoader().axclrtEngineGetModelTypeFromModelId(modelId, modelType);
+        return axclrtEngineGetModelTypeFromModelId(modelId, modelType);
     }
     // 13. axclrtEngineGetIOInfo
     axclError axclrtEngineGetIOInfo_func(uint64_t modelId, axclrtEngineIOInfo *ioInfo)
     {
-        return getLoader().axclrtEngineGetIOInfo(modelId, ioInfo);
+        return axclrtEngineGetIOInfo(modelId, ioInfo);
     }
     // 14. axclrtEngineDestroyIOInfo
     axclError axclrtEngineDestroyIOInfo_func(axclrtEngineIOInfo ioInfo)
     {
-        return getLoader().axclrtEngineDestroyIOInfo(ioInfo);
+        return axclrtEngineDestroyIOInfo(ioInfo);
     }
     // 15. axclrtEngineGetShapeGroupsCount
     axclError axclrtEngineGetShapeGroupsCount_func(axclrtEngineIOInfo ioInfo, int32_t *count)
     {
-        return getLoader().axclrtEngineGetShapeGroupsCount(ioInfo, count);
+        return axclrtEngineGetShapeGroupsCount(ioInfo, count);
     }
     // 16. axclrtEngineGetNumInputs
     uint32_t axclrtEngineGetNumInputs_func(axclrtEngineIOInfo ioInfo)
     {
-        return getLoader().axclrtEngineGetNumInputs(ioInfo);
+        return axclrtEngineGetNumInputs(ioInfo);
     }
     // 17. axclrtEngineGetNumOutputs
     uint32_t axclrtEngineGetNumOutputs_func(axclrtEngineIOInfo ioInfo)
     {
-        return getLoader().axclrtEngineGetNumOutputs(ioInfo);
+        return axclrtEngineGetNumOutputs(ioInfo);
     }
     // 18. axclrtEngineGetInputSizeByIndex
     uint64_t axclrtEngineGetInputSizeByIndex_func(axclrtEngineIOInfo ioInfo, uint32_t group, uint32_t index)
     {
-        return getLoader().axclrtEngineGetInputSizeByIndex(ioInfo, group, index);
+        return axclrtEngineGetInputSizeByIndex(ioInfo, group, index);
     }
     // 19. axclrtEngineGetOutputSizeByIndex
     uint64_t axclrtEngineGetOutputSizeByIndex_func(axclrtEngineIOInfo ioInfo, uint32_t group, uint32_t index)
     {
-        return getLoader().axclrtEngineGetOutputSizeByIndex(ioInfo, group, index);
+        return axclrtEngineGetOutputSizeByIndex(ioInfo, group, index);
     }
     // 20. axclrtEngineGetInputNameByIndex
     const char *axclrtEngineGetInputNameByIndex_func(axclrtEngineIOInfo ioInfo, uint32_t index)
     {
-        return getLoader().axclrtEngineGetInputNameByIndex(ioInfo, index);
+        return axclrtEngineGetInputNameByIndex(ioInfo, index);
     }
     // 21. axclrtEngineGetOutputNameByIndex
     const char *axclrtEngineGetOutputNameByIndex_func(axclrtEngineIOInfo ioInfo, uint32_t index)
     {
-        return getLoader().axclrtEngineGetOutputNameByIndex(ioInfo, index);
+        return axclrtEngineGetOutputNameByIndex(ioInfo, index);
     }
     // 22. axclrtEngineGetInputIndexByName
     int32_t axclrtEngineGetInputIndexByName_func(axclrtEngineIOInfo ioInfo, const char *name)
     {
-        return getLoader().axclrtEngineGetInputIndexByName(ioInfo, name);
+        return axclrtEngineGetInputIndexByName(ioInfo, name);
     }
     // 23. axclrtEngineGetOutputIndexByName
     int32_t axclrtEngineGetOutputIndexByName_func(axclrtEngineIOInfo ioInfo, const char *name)
     {
-        return getLoader().axclrtEngineGetOutputIndexByName(ioInfo, name);
+        return axclrtEngineGetOutputIndexByName(ioInfo, name);
     }
     // 24. axclrtEngineGetInputDims
     axclError axclrtEngineGetInputDims_func(axclrtEngineIOInfo ioInfo, uint32_t group, uint32_t index, axclrtEngineIODims *dims)
     {
-        return getLoader().axclrtEngineGetInputDims(ioInfo, group, index, dims);
+        return axclrtEngineGetInputDims(ioInfo, group, index, dims);
     }
     // 25. axclrtEngineGetOutputDims
     axclError axclrtEngineGetOutputDims_func(axclrtEngineIOInfo ioInfo, uint32_t group, uint32_t index, axclrtEngineIODims *dims)
     {
-        return getLoader().axclrtEngineGetOutputDims(ioInfo, group, index, dims);
+        return axclrtEngineGetOutputDims(ioInfo, group, index, dims);
     }
     // 26. axclrtEngineCreateIO
     axclError axclrtEngineCreateIO_func(axclrtEngineIOInfo ioInfo, axclrtEngineIO *io)
     {
-        return getLoader().axclrtEngineCreateIO(ioInfo, io);
+        return axclrtEngineCreateIO(ioInfo, io);
     }
     // 27. axclrtEngineDestroyIO
     axclError axclrtEngineDestroyIO_func(axclrtEngineIO io)
     {
-        return getLoader().axclrtEngineDestroyIO(io);
+        return axclrtEngineDestroyIO(io);
     }
     // 28. axclrtEngineSetInputBufferByIndex
     axclError axclrtEngineSetInputBufferByIndex_func(axclrtEngineIO io, uint32_t index, const void *dataBuffer, uint64_t size)
     {
-        return getLoader().axclrtEngineSetInputBufferByIndex(io, index, dataBuffer, size);
+        return axclrtEngineSetInputBufferByIndex(io, index, dataBuffer, size);
     }
     // 29. axclrtEngineSetOutputBufferByIndex
     axclError axclrtEngineSetOutputBufferByIndex_func(axclrtEngineIO io, uint32_t index, const void *dataBuffer, uint64_t size)
     {
-        return getLoader().axclrtEngineSetOutputBufferByIndex(io, index, dataBuffer, size);
+        return axclrtEngineSetOutputBufferByIndex(io, index, dataBuffer, size);
     }
     // 30. axclrtEngineSetInputBufferByName
     axclError axclrtEngineSetInputBufferByName_func(axclrtEngineIO io, const char *name, const void *dataBuffer, uint64_t size)
     {
-        return getLoader().axclrtEngineSetInputBufferByName(io, name, dataBuffer, size);
+        return axclrtEngineSetInputBufferByName(io, name, dataBuffer, size);
     }
     // 31. axclrtEngineSetOutputBufferByName
     axclError axclrtEngineSetOutputBufferByName_func(axclrtEngineIO io, const char *name, const void *dataBuffer, uint64_t size)
     {
-        return getLoader().axclrtEngineSetOutputBufferByName(io, name, dataBuffer, size);
+        return axclrtEngineSetOutputBufferByName(io, name, dataBuffer, size);
     }
     // 32. axclrtEngineGetInputBufferByIndex
     axclError axclrtEngineGetInputBufferByIndex_func(axclrtEngineIO io, uint32_t index, void **dataBuffer, uint64_t *size)
     {
-        return getLoader().axclrtEngineGetInputBufferByIndex(io, index, dataBuffer, size);
+        return axclrtEngineGetInputBufferByIndex(io, index, dataBuffer, size);
     }
     // 33. axclrtEngineGetOutputBufferByIndex
     axclError axclrtEngineGetOutputBufferByIndex_func(axclrtEngineIO io, uint32_t index, void **dataBuffer, uint64_t *size)
     {
-        return getLoader().axclrtEngineGetOutputBufferByIndex(io, index, dataBuffer, size);
+        return axclrtEngineGetOutputBufferByIndex(io, index, dataBuffer, size);
     }
     // 34. axclrtEngineGetInputBufferByName
     axclError axclrtEngineGetInputBufferByName_func(axclrtEngineIO io, const char *name, void **dataBuffer, uint64_t *size)
     {
-        return getLoader().axclrtEngineGetInputBufferByName(io, name, dataBuffer, size);
+        return axclrtEngineGetInputBufferByName(io, name, dataBuffer, size);
     }
     // 35. axclrtEngineGetOutputBufferByName
     axclError axclrtEngineGetOutputBufferByName_func(axclrtEngineIO io, const char *name, void **dataBuffer, uint64_t *size)
     {
-        return getLoader().axclrtEngineGetOutputBufferByName(io, name, dataBuffer, size);
+        return axclrtEngineGetOutputBufferByName(io, name, dataBuffer, size);
     }
     // 36. axclrtEngineSetDynamicBatchSize
     axclError axclrtEngineSetDynamicBatchSize_func(axclrtEngineIO io, uint32_t batchSize)
     {
-        return getLoader().axclrtEngineSetDynamicBatchSize(io, batchSize);
+        return axclrtEngineSetDynamicBatchSize(io, batchSize);
     }
     // 37. axclrtEngineCreateContext
     axclError axclrtEngineCreateContext_func(uint64_t modelId, uint64_t *contextId)
     {
-        return getLoader().axclrtEngineCreateContext(modelId, contextId);
+        return axclrtEngineCreateContext(modelId, contextId);
     }
     // 38. axclrtEngineExecute
     axclError axclrtEngineExecute_func(uint64_t modelId, uint64_t contextId, uint32_t group, axclrtEngineIO io)
     {
-        return getLoader().axclrtEngineExecute(modelId, contextId, group, io);
+        return axclrtEngineExecute(modelId, contextId, group, io);
     }
     // 39. axclrtEngineExecuteAsync
     axclError axclrtEngineExecuteAsync_func(uint64_t modelId, uint64_t contextId, uint32_t group, axclrtEngineIO io, axclrtStream stream)
     {
-        return getLoader().axclrtEngineExecuteAsync(modelId, contextId, group, io, stream);
+        return axclrtEngineExecuteAsync(modelId, contextId, group, io, stream);
     }
 
 public:

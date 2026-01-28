@@ -1,6 +1,5 @@
 #pragma once
 #include "CLIPTextEncoder.hpp"
-#include "runner/ax650/ax_model_runner_ax650.hpp"
 #include "runner/axcl/ax_model_runner_axcl.hpp"
 #include "mmap.hpp"
 
@@ -16,29 +15,15 @@ public:
     {
         MMap text_mmap(init_info->text_encoder_path);
 
-        if (init_info->dev_type == ax_devive_e::host_device)
+        m_encoder = std::make_shared<ax_runner_axcl>();
+        auto ret = m_encoder->init(text_mmap.data(), text_mmap.size(), init_info->devid);
+        if (ret != 0)
         {
+            printf("text encoder init failed\n");
 
-            m_encoder = std::make_shared<ax_runner_ax650>();
-            auto ret = m_encoder->init(text_mmap.data(), text_mmap.size(), -1);
-            if (ret != 0)
-            {
-                printf("text encoder init failed\n");
-
-                return false;
-            }
+            return false;
         }
-        else if (init_info->dev_type == ax_devive_e::axcl_device)
-        {
-            m_encoder = std::make_shared<ax_runner_axcl>();
-            auto ret = m_encoder->init(text_mmap.data(), text_mmap.size(), init_info->devid);
-            if (ret != 0)
-            {
-                printf("text encoder init failed\n");
 
-                return false;
-            }
-        }
         LEN_TEXT_TOKEN = m_encoder->get_input(0).vShape[m_encoder->get_input(0).vShape.size() - 1];
         LEN_TEXT_FEATURE = m_encoder->get_output(0).vShape[m_encoder->get_output(0).vShape.size() - 1];
         ALOGI("text token len %d, text feature len %d", LEN_TEXT_TOKEN, LEN_TEXT_FEATURE);

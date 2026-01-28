@@ -11,20 +11,14 @@ static bool axcl_contains(int devid)
     return g_devices.find(devid) != g_devices.end();
 }
 
-AxclApiLoader &getLoader()
-{
-    static AxclApiLoader gloader;
-    return gloader;
-}
-
 axclError axcl_Init()
 {
-    return getLoader().axclInit(0);
+    return axclInit(0);
 }
 
 axclError axcl_Finalize()
 {
-    return getLoader().axclFinalize();
+    return axclFinalize();
 }
 
 axclError axcl_Dev_Init(int devid)

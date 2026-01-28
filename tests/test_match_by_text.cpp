@@ -6,32 +6,11 @@
 #include <SimpleCV.hpp>
 #include "utils/cqdm.h"
 #include <filesystem>
+#include <axcl.h>
 
 int main(int argc, char *argv[])
 {
-    ax_devices_t ax_devices;
-    memset(&ax_devices, 0, sizeof(ax_devices_t));
-    if (ax_dev_enum_devices(&ax_devices) != 0)
-    {
-        printf("enum devices failed\n");
-        return -1;
-    }
-
-    if (ax_devices.host.available)
-    {
-        ax_dev_sys_init(host_device, -1);
-    }
-
-    if (ax_devices.devices.count > 0)
-    {
-        ax_dev_sys_init(axcl_device, 0);
-    }
-
-    if (!ax_devices.host.available && ax_devices.devices.count == 0)
-    {
-        printf("no device available\n");
-        return -1;
-    }
+    axclInit(0);
 
     clip_init_t init_info;
     memset(&init_info, 0, sizeof(init_info));
@@ -56,21 +35,14 @@ int main(int argc, char *argv[])
     printf("tokenizer_path: %s\n", init_info.tokenizer_path);
     printf("db_path: %s\n", init_info.db_path);
 
-    if (ax_devices.host.available)
-    {
-        init_info.dev_type = host_device;
-    }
-    else if (ax_devices.devices.count > 0)
-    {
-        init_info.dev_type = axcl_device;
-        init_info.devid = 0;
-    }
+    init_info.devid = 0;
 
     clip_handle_t handle;
     int ret = clip_create(&init_info, &handle);
     if (ret != clip_errcode_success)
     {
         printf("clip_create failed\n");
+        axclFinalize();
         return -1;
     }
 
@@ -119,14 +91,7 @@ int main(int argc, char *argv[])
 
     clip_destroy(handle);
 
-    if (ax_devices.host.available)
-    {
-        ax_dev_sys_deinit(host_device, -1);
-    }
-    else if (ax_devices.devices.count > 0)
-    {
-        ax_dev_sys_deinit(axcl_device, 0);
-    }
+    axclFinalize();
 
     return 0;
 }

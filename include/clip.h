@@ -46,8 +46,6 @@ extern "C"
 {
 #endif
 
-#include "ax_devices.h"
-
 #define CLIP_DEVICES_COUNT 16
 #define CLIP_VERSION_LEN 32
 #define CLIP_KEY_MAX_LEN 64
@@ -88,7 +86,6 @@ extern "C"
 
     typedef struct
     {
-        ax_devive_e dev_type;                   // Device type
         char devid;                             // axcl device ID
         char text_encoder_path[CLIP_PATH_LEN];  // Text encoder model path
         char image_encoder_path[CLIP_PATH_LEN]; // Image encoder model path
@@ -124,7 +121,7 @@ extern "C"
      * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
      */
     CLIP_API int CLIP_CALL clip_create(clip_init_t *init_info, clip_handle_t *handle);
-    
+
     /**
      * @brief Destroy CLIP handle
      * @param handle Handle
@@ -149,7 +146,7 @@ extern "C"
      * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
      */
     CLIP_API int CLIP_CALL clip_remove(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN]);
-    
+
     /**
      * @brief Check if image exists in CLIP database
      * @param handle Handle
@@ -158,7 +155,6 @@ extern "C"
      */
     CLIP_API int CLIP_CALL clip_contain(clip_handle_t handle, char key[CLIP_KEY_MAX_LEN]);
 
-    
     /**
      * @brief Get text feature
      * @param handle Handle
@@ -168,7 +164,6 @@ extern "C"
      */
     CLIP_API int CLIP_CALL clip_get_text_feat(clip_handle_t handle, const char *text, clip_feature_item_t *feat);
 
-    
     /**
      * @brief Feature match CLIP database images (cosine similarity)
      * @param handle Handle
@@ -178,7 +173,7 @@ extern "C"
      * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
      */
     CLIP_API int CLIP_CALL clip_match_feat(clip_handle_t handle, clip_feature_item_t *feat, clip_result_item_t *results, int top_k);
-    
+
     /**
      * @brief Text match CLIP database images (softmax)
      * @param handle Handle
@@ -188,7 +183,7 @@ extern "C"
      * @return clip_errcode_e Returns 0 on success, error codes see clip_errcode_e
      */
     CLIP_API int CLIP_CALL clip_match_text(clip_handle_t handle, const char *text, clip_result_item_t *results, int top_k);
-    
+
     /**
      * @brief Image match CLIP database images (cosine similarity)
      * @param handle Handle

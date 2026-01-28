@@ -1,7 +1,6 @@
 #ifndef _AXCL_MANAGER_H_
 #define _AXCL_MANAGER_H_
-#include "axclrt_api_loader.h"
-
+#include <axcl.h>
 #ifdef __cplusplus
 extern "C"
 {

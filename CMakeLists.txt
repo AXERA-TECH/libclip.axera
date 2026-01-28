@@ -21,34 +21,24 @@ set(SIMPLECV_BUILD_TESTS OFF)
 add_subdirectory(third-party/SimpleCV)
 include_directories(third-party/SimpleCV/include)
 
-option(AXCL_USE_STATIC_LINK "Use static link for axcl" OFF)
-
-# 如果用户没有显式指定，就在 Windows 上默认开启
-if(WIN32 AND NOT DEFINED AXCL_USE_STATIC_LINK)
-    set(AXCL_USE_STATIC_LINK ON)
-endif()
-
-message(STATUS "AXCL_USE_STATIC_LINK: ${AXCL_USE_STATIC_LINK}")
-
-if(AXCL_USE_STATIC_LINK)
-    if (AXCL_DIR)
+if (AXCL_DIR)
+    message(STATUS "AXCL_DIR Path: ${AXCL_DIR}")
+    include_directories(${AXCL_DIR}/include)
+    link_directories(${AXCL_DIR}/lib)
+    include_directories(${AXCL_DIR}/include/axcl)
+    link_directories(${AXCL_DIR}/lib/axcl)
+else()
+    if(WIN32)
+        set(AXCL_DIR "C:/Program Files/AXCL/axcl/out/axcl_win_x64")
         message(STATUS "AXCL_DIR Path: ${AXCL_DIR}")
-        include_directories(${AXCL_DIR}/include)
-        link_directories(${AXCL_DIR}/lib)
-        include_directories(${AXCL_DIR}/include/axcl)
-        link_directories(${AXCL_DIR}/lib/axcl)
+        include_directories(${AXCL_DIR}/include/)
+        link_directories(${AXCL_DIR}/lib/)
     else()
-        if(WIN32)
-            set(AXCL_DIR "C:/Program Files/AXCL/axcl/out/axcl_win_x64")
-            message(STATUS "AXCL_DIR Path: ${AXCL_DIR}")
-            include_directories(${AXCL_DIR}/include/)
-            link_directories(${AXCL_DIR}/lib/)
-        else()
-            include_directories(/usr/include/axcl/)
-            link_directories(/usr/lib/axcl/)
-        endif()
+        include_directories(/usr/include/axcl/)
+        link_directories(/usr/lib/axcl/)
     endif()
 endif()
+
 
 include_directories(include)
 include_directories(src)
@@ -59,9 +49,6 @@ add_library(clip SHARED
     src/clip.cpp
     src/runner/axcl/axcl_manager.cpp
     src/runner/axcl/ax_model_runner_axcl.cpp
-    src/runner/ax650/ax_model_runner_ax650.cpp
-    src/utils/enum_devices.cpp
-    src/ax_devices.cpp
     src/tokenizer/tokenizer.cpp
 )
 
@@ -81,10 +68,7 @@ function(build_test test_name source)
     target_link_libraries(${test_name} clip SimpleCV::simplecv)
 endfunction()
 
-build_test(test_ax_api tests/test_ax_api.cpp)
 build_test(test_axcl_api tests/test_axcl_api.cpp)
-build_test(test_enum_devices tests/test_enum_devices.cpp)
-build_test(test_load_model tests/test_load_model.cpp)
 build_test(test_match_by_text tests/test_match_by_text.cpp)
 build_test(test_tokenizer tests/tokenizer/test_tokenizer.cpp)
 

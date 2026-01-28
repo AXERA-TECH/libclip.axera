@@ -1,12 +1,7 @@
 #include "clip.h"
 
-#include "enum_devices.hpp"
-
 #include "runner/axcl/axcl_manager.h"
 #include "runner/axcl/ax_model_runner_axcl.hpp"
-
-#include "runner/ax650/ax_api_loader.h"
-#include "runner/ax650/ax_model_runner_ax650.hpp"
 
 #include "CLIP.hpp"
 
@@ -17,10 +12,6 @@
 #include <cstring>
 #include <fstream>
 #include <memory>
-
-AxclApiLoader &getLoader();
-AxSysApiLoader &get_ax_sys_loader();
-AxEngineApiLoader &get_ax_engine_loader();
 
 struct clip_internal_handle_t
 {
@@ -36,31 +27,14 @@ struct clip_internal_handle_t
 
 int clip_create(clip_init_t *init_info, clip_handle_t *_handle)
 {
-    if (init_info->dev_type == ax_devive_e::host_device)
+    if (!axcl_Dev_IsInit(init_info->devid))
     {
-        if (!get_ax_sys_loader().is_init() || !get_ax_engine_loader().is_init())
+        int ret = axcl_Dev_Init(init_info->devid);
+        if (ret != clip_errcode_success)
         {
-            printf("axsys or axengine not init\n");
-            return clip_errcode_create_failed_sys;
+            printf("axcl_Dev_Init failed\n");
+            return clip_errcode_failed;
         }
-    }
-    else if (init_info->dev_type == ax_devive_e::axcl_device)
-    {
-        if (!getLoader().is_init())
-        {
-            printf("unsupport axcl\n");
-            return clip_errcode_create_failed_sys;
-        }
-
-        if (!axcl_Dev_IsInit(init_info->devid))
-        {
-            printf("axcl device %d not init\n", init_info->devid);
-            return clip_errcode_create_failed_sys;
-        }
-    }
-    else
-    {
-        return clip_errcode_failed;
     }
 
     clip_internal_handle_t *handle = new clip_internal_handle_t;
@@ -239,7 +213,7 @@ int clip_get_text_feat(clip_handle_t handle, const char *text, clip_feature_item
         printf("encode text failed, text_features size: %ld > %d\n", text_features[0].size(), CLIP_TEXT_FEAT_MAX_LEN);
         return clip_errcode_match_failed_encode_text;
     }
-    
+
     memcpy(feature->feat, text_features[0].data(), text_features[0].size() * sizeof(float));
     feature->len = text_features[0].size();
     return clip_errcode_success;
