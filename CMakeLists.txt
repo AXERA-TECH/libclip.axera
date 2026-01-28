@@ -65,7 +65,18 @@ endif()
 
 function(build_test test_name source)
     add_executable(${test_name} ${source} tests/utils/cqdm.cpp)
-    target_link_libraries(${test_name} clip SimpleCV::simplecv)
+    target_link_libraries(${test_name} PRIVATE clip SimpleCV::simplecv)
+
+    # 关键：确保是控制台子系统，避免找 WinMain
+    if(MINGW)
+        target_link_options(${test_name} PRIVATE -mconsole)
+        # 如果你的入口是 wmain（为了拿 UTF-16 argv），才需要 -municode
+        target_link_options(${test_name} PRIVATE -municode)
+    elseif(MSVC)
+        # MSVC 明确使用控制台子系统（一般默认就是，但这里更保险）
+        target_link_options(${test_name} PRIVATE /SUBSYSTEM:CONSOLE)
+        # 如果你用 wmain，MSVC 通常不需要额外指定入口
+    endif()
 endfunction()
 
 build_test(test_axcl_api tests/test_axcl_api.cpp)
