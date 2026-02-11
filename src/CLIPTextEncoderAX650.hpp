@@ -71,7 +71,17 @@ public:
         text_features.resize(texts.size());
         for (size_t i = 0; i < texts.size(); i++)
         {
-            auto text = bos_str + texts[i] + eos_str;
+            std::string text;
+            // SigLIP2: add_eos_token=True, add_bos_token=False
+            // Other CLIP: add both bos and eos
+            if (clip_type == CLIPType::siglip2)
+            {
+                text = texts[i] + eos_str;
+            }
+            else
+            {
+                text = bos_str + texts[i] + eos_str;
+            }
             std::vector<int> text_token = tokenizer->encode(text);
             if (text_token.size() > LEN_TEXT_TOKEN)
             {

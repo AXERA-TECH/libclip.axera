@@ -70,15 +70,21 @@ bool parse_axcl_smi_output(std::vector<std::string> &lines, ax_devices_t &out)
     if (lines.size() < 5)
         return false;
 
-    // 提取 host + driver 版本号（第2行）
+    // 提取 host + driver 版本号（遍历查找，不一定是第2行）
     std::regex version_regex(R"(AXCL-SMI\s+(V[^\s]+)\s+Driver\s+(V[^\s]+))");
     std::smatch match;
-    if (std::regex_search(lines[1], match, version_regex))
+    bool version_found = false;
+    for (const auto &line : lines)
     {
-        strncpy(out.devices.host_version, match[1].str().c_str(), sizeof(out.devices.host_version) - 1);
-        strncpy(out.devices.dev_version, match[2].str().c_str(), sizeof(out.devices.dev_version) - 1);
+        if (std::regex_search(line, match, version_regex))
+        {
+            strncpy(out.devices.host_version, match[1].str().c_str(), sizeof(out.devices.host_version) - 1);
+            strncpy(out.devices.dev_version, match[2].str().c_str(), sizeof(out.devices.dev_version) - 1);
+            version_found = true;
+            break;
+        }
     }
-    else
+    if (!version_found)
     {
         return false;
     }
@@ -124,7 +130,10 @@ bool parse_axcl_smi_output(std::vector<std::string> &lines, ax_devices_t &out)
 bool get_axcl_devices(ax_devices_t *info)
 {
     std::vector<std::string> cmds = {"axcl-smi",
-                                     "C:/Program Files/AXCL/axcl/out/axcl_win_x64/bin/axcl-smi.exe"};
+#ifdef _WIN32
+                                     "C:/Program Files/AXCL/axcl/out/axcl_win_x64/bin/axcl-smi.exe"
+#endif
+    };
     for (const auto &cmd : cmds)
     {
         std::vector<std::string> lines = exec_cmd_lines(cmd);

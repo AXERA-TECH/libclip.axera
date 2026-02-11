@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
     parser.add<std::string>("tenc", 0, "text encoder model(onnx model or axmodel)", true, "cnclip/cnclip_vit_l14_336px_text_u16.axmodel");
     parser.add<std::string>("vocab", 'v', "vocab path", true, "tests/cnclip_tokenizer.txt");
     parser.add<std::string>("db_path", 'd', "db path", false, "clip_feat_db");
+    parser.add<int>("model_type", 'm', "model type (0=unknown, 1=clip, 2=cn_clip, 3=jina_clip_v2, 4=siglip2)", false, 0);
 
     parser.add<std::string>("image", 'i', "image folder(jpg png etc....)", true);
     parser.add<std::string>("text", 't', "text or txt file", true);
@@ -50,6 +51,7 @@ int main(int argc, char *argv[])
     sprintf(init_info.text_encoder_path, "%s", parser.get<std::string>("tenc").c_str());
     sprintf(init_info.tokenizer_path, "%s", parser.get<std::string>("vocab").c_str());
     sprintf(init_info.db_path, "%s", parser.get<std::string>("db_path").c_str());
+    init_info.model_type = (model_type_e)parser.get<int>("model_type");
 
     printf("image_encoder_path: %s\n", init_info.image_encoder_path);
     printf("text_encoder_path: %s\n", init_info.text_encoder_path);

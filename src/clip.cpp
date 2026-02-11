@@ -78,7 +78,7 @@ int clip_create(clip_init_t *init_info, clip_handle_t *_handle)
         delete handle;
         return clip_errcode_create_failed_tenc;
     }
-    ret = handle->m_clip.load_tokenizer(init_info->tokenizer_path);
+    ret = handle->m_clip.load_tokenizer(init_info->tokenizer_path, init_info->model_type);
     if (!ret)
     {
         printf("load tokenizer failed\n");

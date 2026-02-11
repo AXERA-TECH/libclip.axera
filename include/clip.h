@@ -86,6 +86,16 @@ extern "C"
 
     typedef void *clip_handle_t;
 
+    // Model type enum
+    typedef enum
+    {
+        model_type_unknown = 0,
+        model_type_clip,        // OpenAI CLIP
+        model_type_cn_clip,     // Chinese CLIP
+        model_type_jina_clip_v2,// Jina CLIP v2
+        model_type_siglip2,     // SigLIP2
+    } model_type_e;
+
     typedef struct
     {
         ax_devive_e dev_type;                   // Device type
@@ -94,6 +104,7 @@ extern "C"
         char image_encoder_path[CLIP_PATH_LEN]; // Image encoder model path
         char tokenizer_path[CLIP_PATH_LEN];     // Tokenizer model path
         char db_path[CLIP_PATH_LEN];            // Database path (if empty path is specified, a folder will be created)
+        model_type_e model_type;                // Model type (clip, cn_clip, jina_clip_v2, siglip2, etc.)
     } clip_init_t;
 
     typedef struct
