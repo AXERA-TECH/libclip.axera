@@ -89,6 +89,7 @@ build_test(test_match_by_text tests/test_match_by_text.cpp)
 build_test(test_tokenizer tests/tokenizer/test_tokenizer.cpp)
 build_test(test_siglip2 tests/test_siglip2.cpp)
 build_test(test_siglip2_tokenizer tests/test_siglip2_tokenizer.cpp)
+build_test(test_clip_direct tests/test_clip_direct.cpp)
 
 
 
