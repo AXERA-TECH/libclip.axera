@@ -8,27 +8,27 @@
 #include "runner/ax650/ax_api_loader.h"
 #include "runner/ax650/ax_model_runner_ax650.hpp"
 
-#include <queue>
 #include <cstring>
-#include <fstream>
-#include <memory>
+#include <mutex>
+#include <vector>
 
 AxclApiLoader &getLoader();
 AxSysApiLoader &get_ax_sys_loader();
 AxEngineApiLoader &get_ax_engine_loader();
 
-struct gInit
+namespace
 {
-    gInit()
+std::once_flag g_backend_log_once;
+std::once_flag g_axcl_init_once;
+int g_axcl_init_status = ax_dev_errcode_success;
+
+void log_supported_backends_once()
+{
+    std::call_once(g_backend_log_once, []()
     {
         std::vector<std::string> supported_backends;
         if (getLoader().is_init())
         {
-            auto ret = axcl_Init();
-            if (ret != 0)
-            {
-                printf("axclInit failed\n");
-            }
             supported_backends.push_back("axcl");
         }
 
@@ -36,34 +36,47 @@ struct gInit
         {
             supported_backends.push_back("ax650");
         }
+
         printf("supported backends: [");
-        for (int i = 0; i < supported_backends.size(); i++)
+        for (size_t i = 0; i < supported_backends.size(); ++i)
         {
             printf("%s", supported_backends[i].c_str());
-            if (i < supported_backends.size() - 1)
+            if (i + 1 < supported_backends.size())
             {
                 printf(", ");
             }
         }
         printf("]\n");
+    });
+}
+
+int ensure_axcl_runtime_init()
+{
+    log_supported_backends_once();
+
+    if (!getLoader().is_init())
+    {
+        printf("unsupport axcl\n");
+        return ax_dev_errcode_axcl_sysinit_failed;
     }
 
-    ~gInit()
+    std::call_once(g_axcl_init_once, []()
     {
-        if (getLoader().is_init())
+        auto ret = axcl_Init();
+        if (ret != 0)
         {
-            auto ret = axcl_Finalize();
-            if (ret != 0)
-            {
-                printf("axcl_Finalize failed\n");
-            }
+            printf("axclInit failed\n");
+            g_axcl_init_status = ax_dev_errcode_axcl_sysinit_failed;
         }
-    }
-};
-std::shared_ptr<gInit> gIniter = std::make_shared<gInit>();
+    });
+
+    return g_axcl_init_status;
+}
+} // namespace
 
 int ax_dev_enum_devices(ax_devices_t *devices)
 {
+    log_supported_backends_once();
     get_host_info(devices);
     get_axcl_devices(devices);
     return 0;
@@ -83,6 +96,7 @@ int ax_dev_sys_init(ax_devive_e dev_type, char devid)
                 printf("AX_SYS_Init failed\n");
                 return ax_dev_errcode_sysinit_failed;
             }
+
             AX_ENGINE_NPU_ATTR_T npu_attr;
             memset(&npu_attr, 0, sizeof(AX_ENGINE_NPU_ATTR_T));
             npu_attr.eHardMode = AX_ENGINE_VIRTUAL_NPU_DISABLE;
@@ -94,19 +108,19 @@ int ax_dev_sys_init(ax_devive_e dev_type, char devid)
             }
             return ax_dev_errcode_success;
         }
-        else
-        {
-            printf("axsys or axengine not init\n");
-            return ax_dev_errcode_sysinit_failed;
-        }
+
+        printf("axsys or axengine not init\n");
+        return ax_dev_errcode_sysinit_failed;
     }
-    else if (dev_type == ax_devive_e::axcl_device)
+
+    if (dev_type == ax_devive_e::axcl_device)
     {
-        if (!getLoader().is_init())
+        auto init_ret = ensure_axcl_runtime_init();
+        if (init_ret != ax_dev_errcode_success)
         {
-            printf("unsupport axcl\n");
-            return ax_dev_errcode_axcl_sysinit_failed;
+            return init_ret;
         }
+
         auto ret = axcl_Dev_Init(devid);
         if (ret != 0)
         {
@@ -115,6 +129,7 @@ int ax_dev_sys_init(ax_devive_e dev_type, char devid)
         }
         return ax_dev_errcode_success;
     }
+
     return ax_dev_errcode_sysinit_failed;
 }
 
@@ -140,27 +155,27 @@ int ax_dev_sys_deinit(ax_devive_e dev_type, char devid)
             }
             return ax_dev_errcode_success;
         }
-        else
-        {
-            printf("axsys or axengine not init\n");
-            return ax_dev_errcode_sysdeinit_failed;
-        }
+
+        printf("axsys or axengine not init\n");
+        return ax_dev_errcode_sysdeinit_failed;
     }
-    else if (dev_type == ax_devive_e::axcl_device)
+
+    if (dev_type == ax_devive_e::axcl_device)
     {
         if (!getLoader().is_init())
         {
             printf("unsupport axcl\n");
             return ax_dev_errcode_axcl_sysdeinit_failed;
         }
+
         auto ret = axcl_Dev_Exit(devid);
         if (ret != 0)
         {
             printf("axcl_Dev_Exit failed\n");
             return ax_dev_errcode_axcl_sysdeinit_failed;
         }
-
         return ax_dev_errcode_success;
     }
+
     return ax_dev_errcode_sysdeinit_failed;
 }

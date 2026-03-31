@@ -2,9 +2,28 @@
 #include "axcl_manager.hpp"
 #include "ax_cmm_utils.hpp"
 
+#include <atomic>
+#include <cstdlib>
 #include <map>
+#include <mutex>
 
 static std::map<int, std::shared_ptr<AXCLWorker>> g_devices;
+static std::mutex g_devices_mu;
+
+namespace
+{
+std::once_flag g_axcl_init_once;
+std::once_flag g_axcl_atexit_once;
+axclError g_axcl_init_ret = 0;
+std::atomic<bool> g_axcl_inited{false};
+std::atomic<bool> g_axcl_finalized{false};
+std::mutex g_axcl_finalize_mu;
+
+void axcl_finalize_at_exit()
+{
+    (void)axcl_Finalize();
+}
+} // namespace
 
 static bool axcl_contains(int devid)
 {
@@ -19,16 +38,61 @@ AxclApiLoader &getLoader()
 
 axclError axcl_Init()
 {
-    return getLoader().axclInit(0);
+    std::call_once(g_axcl_init_once, []()
+                   {
+                       if (!getLoader().is_init() || !getLoader().axclInit)
+                       {
+                           g_axcl_init_ret = -1;
+                           return;
+                       }
+                       g_axcl_init_ret = getLoader().axclInit(nullptr);
+                       if (g_axcl_init_ret == 0)
+                       {
+                           g_axcl_inited.store(true);
+                           // Ensure we always finalize before process exit to avoid runtime
+                           // aborts triggered from AXCL's internal exit handlers.
+                           std::call_once(g_axcl_atexit_once, []()
+                                          { std::atexit(axcl_finalize_at_exit); });
+                       } });
+
+    return g_axcl_init_ret;
 }
 
 axclError axcl_Finalize()
 {
+    std::lock_guard<std::mutex> lock(g_axcl_finalize_mu);
+    if (g_axcl_finalized.load())
+    {
+        return 0;
+    }
+
+    {
+        std::lock_guard<std::mutex> dev_lock(g_devices_mu);
+        for (auto &kv : g_devices)
+        {
+            if (kv.second)
+            {
+                kv.second->Stop();
+            }
+        }
+        g_devices.clear();
+    }
+
+    g_axcl_finalized.store(true);
+    if (!g_axcl_inited.load())
+    {
+        return 0;
+    }
+    if (!getLoader().is_init() || !getLoader().axclFinalize)
+    {
+        return 0;
+    }
     return getLoader().axclFinalize();
 }
 
 axclError axcl_Dev_Init(int devid)
 {
+    std::lock_guard<std::mutex> lock(g_devices_mu);
     if (axcl_contains(devid))
     {
         ALOGI("AXCL device %d already inited\n", devid);
@@ -44,6 +108,7 @@ axclError axcl_Dev_Init(int devid)
 
 bool axcl_Dev_IsInit(int devid)
 {
+    std::lock_guard<std::mutex> lock(g_devices_mu);
     if (axcl_contains(devid))
     {
         return true;
@@ -53,6 +118,7 @@ bool axcl_Dev_IsInit(int devid)
 
 axclError axcl_Dev_Exit(int devid)
 {
+    std::lock_guard<std::mutex> lock(g_devices_mu);
     if (!axcl_contains(devid))
     {
         ALOGE("AXCL device %d not inited\n", devid);

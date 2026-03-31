@@ -2,13 +2,67 @@
 #include "utils/cmdline.hpp"
 #include "utils/timer.hpp"
 #include <fstream>
+#include <cstdio>
 #include <cstring>
 #include <SimpleCV.hpp>
 #include "utils/cqdm.h"
 #include <filesystem>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <shellapi.h>
+
+static void overwrite_argv_utf8_on_windows(int &argc, char **&argv)
+{
+    int wargc = 0;
+    wchar_t **wargv = CommandLineToArgvW(GetCommandLineW(), &wargc);
+    if (!wargv || wargc <= 0)
+        return;
+
+    // Keep storage alive for the lifetime of main().
+    static std::vector<std::string> args_u8;
+    static std::vector<char *> argv_u8;
+    args_u8.clear();
+    argv_u8.clear();
+    args_u8.reserve(wargc);
+    argv_u8.reserve(wargc + 1);
+
+    for (int i = 0; i < wargc; ++i)
+    {
+        const wchar_t *ws = wargv[i];
+        const int need = WideCharToMultiByte(CP_UTF8, 0, ws, -1, nullptr, 0, nullptr, nullptr);
+        std::string s;
+        if (need > 0)
+        {
+            // `need` includes the trailing null, so allocate `need` bytes then drop it.
+            s.resize(static_cast<size_t>(need));
+            WideCharToMultiByte(CP_UTF8, 0, ws, -1, s.data(), need, nullptr, nullptr);
+            if (!s.empty() && s.back() == '\0')
+            {
+                s.pop_back();
+            }
+        }
+        args_u8.emplace_back(std::move(s));
+    }
+    LocalFree(wargv);
+
+    for (auto &s : args_u8)
+        argv_u8.push_back(const_cast<char *>(s.c_str()));
+    argv_u8.push_back(nullptr);
+
+    argc = wargc;
+    argv = argv_u8.data();
+}
+#endif
+
 int main(int argc, char *argv[])
 {
+#ifdef _WIN32
+    // cmd.exe passes non-ASCII args in the system ANSI code page. Convert from the
+    // Unicode command line to UTF-8 so the tokenizer sees correct UTF-8 text.
+    overwrite_argv_utf8_on_windows(argc, argv);
+#endif
+
     ax_devices_t ax_devices;
     memset(&ax_devices, 0, sizeof(ax_devices_t));
     if (ax_dev_enum_devices(&ax_devices) != 0)
@@ -84,9 +138,10 @@ int main(int argc, char *argv[])
     for (size_t i = 0; i < image_paths.size(); i++)
     {
         std::string image_path = image_paths[i];
-        std::string image_name = image_path.substr(image_path.find_last_of("/") + 1);
+        // Keep keys stable across platforms (Windows paths use '\\').
+        std::string image_name = std::filesystem::path(image_path).filename().string();
         char key[CLIP_KEY_MAX_LEN];
-        sprintf(key, "%s", image_name.c_str());
+        std::snprintf(key, sizeof(key), "%s", image_name.c_str());
         if (clip_contain(handle, key))
         {
             // printf("%s is exist %04ld/%04ld\n", key, i, image_paths.size());

@@ -4,6 +4,7 @@
 #include <mutex>
 #include <map>
 #include <stdexcept>
+#include <cstdint>
 
 typedef struct
 {
@@ -11,7 +12,7 @@ typedef struct
     unsigned int nIdx;
     std::vector<unsigned int> vShape;
     int nSize;
-    unsigned long phyAddr;
+    uint64_t phyAddr;
     void *pVirAddr;
 } ax_runner_tensor_t;
 

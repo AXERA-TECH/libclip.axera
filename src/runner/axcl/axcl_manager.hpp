@@ -8,6 +8,8 @@
 #include <atomic>
 #include <future>
 #include <chrono>
+#include <type_traits>
+#include <utility>
 
 #include "axclrt_api_loader.h"
 #include "sample_log.h"
@@ -23,43 +25,71 @@ private:
     std::mutex queue_mutex;
     std::condition_variable condition;
     std::atomic<bool> stop_flag;
+    bool direct_mode;
+    int current_device_id;
 
     std::promise<bool> initPromise;
 
-    void run(int devid)
+    bool initialize_device_context(int devid)
     {
-        ALOGI("AXCLWorker start with devid %d", devid);
-
         axclrtDeviceList lst;
         if (const auto ret = getLoader().axclrtGetDeviceList(&lst); 0 != ret || 0 == lst.num)
         {
             ALOGE("Get AXCL device failed{0x%8x}, find total %d device.", ret, lst.num);
-            initPromise.set_value(false); // 初始化失败
-            return;
+            return false;
         }
         if (devid >= lst.num)
         {
             ALOGE("Invalid AXCL device id %d, find total %d device.", devid, lst.num);
-            initPromise.set_value(false); // 初始化失败
-            return;
+            return false;
         }
 
-        // ALOGI("AXCLWorker start with devidx-%d, bus-id-%d", devidx, lst.devices[devidx]);
-
-        if (const auto ret = getLoader().axclrtSetDevice(lst.devices[devid]); 0 != ret)
+        current_device_id = lst.devices[devid];
+        if (const auto ret = getLoader().axclrtSetDevice(current_device_id); 0 != ret)
         {
             ALOGE("Set AXCL device failed{0x%8x}.", ret);
-            initPromise.set_value(false); // 初始化失败
-            return;
+            current_device_id = -1;
+            return false;
         }
         if (const auto ret = getLoader().axclrtEngineInit(AXCL_VNPU_DISABLE); 0 != ret)
         {
             ALOGE("getLoader().axclrtEngineInit %d", ret);
-            initPromise.set_value(false); // 初始化失败
+            if (getLoader().axclrtResetDevice)
+            {
+                getLoader().axclrtResetDevice(current_device_id);
+            }
+            current_device_id = -1;
+            return false;
+        }
+        return true;
+    }
+
+    void cleanup_device_context()
+    {
+        if (current_device_id < 0)
+        {
             return;
         }
 
-        // 初始化成功，通知 Run 可以返回 true
+        if (getLoader().axclrtEngineFinalize)
+        {
+            getLoader().axclrtEngineFinalize();
+        }
+        if (getLoader().axclrtResetDevice)
+        {
+            getLoader().axclrtResetDevice(current_device_id);
+        }
+        current_device_id = -1;
+    }
+
+    void run(int devid)
+    {
+        ALOGI("AXCLWorker start with devid %d", devid);
+        if (!initialize_device_context(devid))
+        {
+            initPromise.set_value(false);
+            return;
+        }
         initPromise.set_value(true);
 
         while (true)
@@ -78,6 +108,7 @@ private:
             }
             task();
         }
+        cleanup_device_context();
         ALOGI("AXCLWorker exit with devid %d", devid);
     }
 
@@ -97,6 +128,13 @@ private:
         -> std::future<typename std::result_of<F(Args...)>::type>
     {
         using result_type = typename std::result_of<F(Args...)>::type;
+        if (direct_mode)
+        {
+            std::promise<result_type> promise;
+            auto future = promise.get_future();
+            promise.set_value(std::invoke(std::forward<F>(f), std::forward<Args>(args)...));
+            return future;
+        }
         // 将函数及其参数绑定成一个无参函数
         auto task = std::make_shared<std::packaged_task<result_type()>>(
             std::bind(std::forward<F>(f), std::forward<Args>(args)...));
@@ -346,7 +384,7 @@ private:
     }
 
 public:
-    AXCLWorker() : stop_flag(false)
+    AXCLWorker() : stop_flag(false), direct_mode(false), current_device_id(-1)
     {
     }
     ~AXCLWorker()
@@ -356,6 +394,12 @@ public:
 
     bool Run(int devid)
     {
+        stop_flag = false;
+#if defined(_WIN32) || defined(_WIN64)
+        direct_mode = true;
+        return initialize_device_context(devid);
+#else
+        direct_mode = false;
         // 启动线程前先重置 promise，确保没有旧状态影响
         initPromise = std::promise<bool>();
         std::future<bool> initFuture = initPromise.get_future();
@@ -374,18 +418,26 @@ public:
             ALOGE("AXCLWorker initialization timeout");
             return false;
         }
+#endif
     }
     // 停止工作线程
     void Stop()
     {
+        if (direct_mode)
+        {
+            cleanup_device_context();
+            direct_mode = false;
+            return;
+        }
+
         if (!stop_flag)
         {
             stop_flag = true;
             condition.notify_one();
-            if (worker_thread.joinable())
-            {
-                worker_thread.join();
-            }
+        }
+        if (worker_thread.joinable())
+        {
+            worker_thread.join();
         }
     }
 
