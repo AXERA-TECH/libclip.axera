@@ -95,6 +95,8 @@ sudo apt install libopencv-dev build-essential
 
 [cnclip](https://huggingface.co/AXERA-TECH/cnclip)
 
+[mobileclip2](https://huggingface.co/AXERA-TECH/MobileCLIP/tree/main/mobileclip2_s2/AX650)
+
 ### On x86 (for development/testing)
 
 ```bash
@@ -142,7 +144,7 @@ match text "dog"   8.86ms
 ### Web demo(After `make install`)
 ```
 pip install -r requirements.txt
-python gradio_example.py --ienc cnclip/cnclip_vit_l14_336px_vision_u16u8.axmodel --tenc cnclip/cnclip_vit_l14_336px_text_u16.axmodel --vocab cnclip/cn_vocab.txt --isCN 1 --db_path clip_feat_db_coco --image_folder coco_1000/
+python gradio_example.py --ienc cnclip/cnclip_vit_l14_336px_vision_u16u8.axmodel --tenc cnclip/cnclip_vit_l14_336px_text_u16.axmodel --vocab cnclip/cn_vocab.txt --db_path clip_feat_db_coco --image_folder coco_1000/ --model_type cn_clip
 
 * Running on local URL:  http://0.0.0.0:7860
 * To create a public link, set `share=True` in `launch()`.

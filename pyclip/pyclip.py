@@ -5,15 +5,25 @@ import numpy as np
 import platform
 from pyaxdev import _lib, AxDeviceType, AxDevices, check_error
 
+# Model type enum
+class ModelType(ctypes.c_int):
+    model_type_unknown = 0
+    model_type_clip = 1
+    model_type_cn_clip = 2
+    model_type_jina_clip_v2 = 3
+    model_type_siglip2 = 4
+    model_type_mobileclip2 = 5
+
 
 class ClipInit(ctypes.Structure):
     _fields_ = [
         ('dev_type', AxDeviceType),
-        ('devid', ctypes.c_char),
+        ('devid', ctypes.c_int),
         ('text_encoder_path', ctypes.c_char * 128),
         ('image_encoder_path', ctypes.c_char * 128),
         ('tokenizer_path', ctypes.c_char * 128),
-        ('db_path', ctypes.c_char * 128)
+        ('db_path', ctypes.c_char * 128),
+        ('model_type', ModelType)
     ]
 
 class ClipImage(ctypes.Structure):
@@ -74,6 +84,7 @@ class Clip:
         # 设置初始化参数
         self.init_info.dev_type = init_info.get('dev_type', AxDeviceType.axcl_device)
         self.init_info.devid = init_info.get('devid', 0)
+        self.init_info.model_type = init_info.get('model_type', ModelType.model_type_unknown)
         
         # 设置路径
         for path_name in ['text_encoder_path', 'image_encoder_path', 'tokenizer_path', 'db_path']:

@@ -94,6 +94,7 @@ extern "C"
         model_type_cn_clip,     // Chinese CLIP
         model_type_jina_clip_v2,// Jina CLIP v2
         model_type_siglip2,     // SigLIP2
+        model_type_mobileclip2, // MobileCLIP2-S2
     } model_type_e;
 
     typedef struct

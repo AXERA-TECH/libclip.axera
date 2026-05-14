@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
     if (argc < 4)
     {
         std::cout << "Usage: " << argv[0] << " <model_type> <image1,image2,...> <text1,text2,...> [ienc] [tenc] [vocab]" << std::endl;
-        std::cout << "  model_type: 1=clip, 2=cn_clip, 3=jina_clip_v2, 4=siglip2" << std::endl;
+        std::cout << "  model_type: 1=clip, 2=cn_clip, 3=jina_clip_v2, 4=siglip2, 5=mobileclip2" << std::endl;
         std::cout << "  images: comma-separated image paths" << std::endl;
         std::cout << "  texts: comma-separated text queries (use \"\" for texts with spaces)" << std::endl;
         std::cout << std::endl;
