@@ -26,6 +26,8 @@ inline int model_type_to_clip_type(model_type_e type)
             return 1; // CLIPType::jina_clip_v2
         case model_type_siglip2:
             return 4; // CLIPType::siglip2
+        case model_type_mobileclip2:
+            return 5; // CLIPType::mobileclip2
         default:
             return 0; // CLIPType::unknown
     }
@@ -37,7 +39,8 @@ enum class CLIPType
     jina_clip_v2,
     cn_clip,
     clip,
-    siglip2
+    siglip2,
+    mobileclip2
 };
 
 class CLIPTextEncoder
@@ -55,7 +58,8 @@ protected:
         {CLIPType::jina_clip_v2, {"<s>", "</s>"}},
         {CLIPType::cn_clip, {"[CLS]", "[SEP]"}},
         {CLIPType::clip, {"<|startoftext|>", "<|endoftext|>"}},
-        {CLIPType::siglip2, {"", "<eos>"}}};
+        {CLIPType::siglip2, {"", "<eos>"}},
+        {CLIPType::mobileclip2, {"<|startoftext|>", "<|endoftext|>"}}};
 
     CLIPType clip_type = CLIPType::unknown;
     std::string bos_str;

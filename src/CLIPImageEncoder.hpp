@@ -22,6 +22,11 @@ static const ImagePreprocessParams SIGLIP2_PREPROCESS = {
     {0.5f * 255.f, 0.5f * 255.f, 0.5f * 255.f},
     {1 / (0.5f * 255.f), 1 / (0.5f * 255.f), 1 / (0.5f * 255.f)}};
 
+// MobileCLIP2-S2 preprocessing: mean=0.0, std=1.0 for all channels
+static const ImagePreprocessParams MOBILECLIP2_PREPROCESS = {
+    {0.0f, 0.0f, 0.0f},
+    {1.0f / 255.f, 1.0f / 255.f, 1.0f / 255.f}};
+
 class CLIPImageEncoder
 {
 protected:

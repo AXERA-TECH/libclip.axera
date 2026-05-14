@@ -200,6 +200,8 @@ private:
     std::unordered_map<wchar_t, uint8_t> u2b_;
     std::unordered_map<std::string, int> encoder_;
     std::vector<std::string> decoder_;
+    // BPE style detection: true for ByteLevel BPE (with </w> suffix), false for GPT-2 style (with space prefix)
+    bool use_bytelevel_bpe_ = false;
 };
 };
 };

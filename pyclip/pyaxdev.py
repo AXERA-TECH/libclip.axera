@@ -103,10 +103,10 @@ class AxDevices(ctypes.Structure):
 _lib.ax_dev_enum_devices.argtypes = [ctypes.POINTER(AxDevices)]
 _lib.ax_dev_enum_devices.restype = ctypes.c_int
 
-_lib.ax_dev_sys_init.argtypes = [AxDeviceType, ctypes.c_char]
+_lib.ax_dev_sys_init.argtypes = [AxDeviceType, ctypes.c_int]
 _lib.ax_dev_sys_init.restype = ctypes.c_int
 
-_lib.ax_dev_sys_deinit.argtypes = [AxDeviceType, ctypes.c_char]
+_lib.ax_dev_sys_deinit.argtypes = [AxDeviceType, ctypes.c_int]
 _lib.ax_dev_sys_deinit.restype = ctypes.c_int
 
 def enum_devices() -> dict:

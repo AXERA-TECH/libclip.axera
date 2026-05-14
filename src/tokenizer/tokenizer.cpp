@@ -670,11 +670,20 @@ bool HuggingfaceTokenizer::load_vocab(std::ifstream& tok_file) {
     line_str >> vocab_len >> merge_len;
     // load vocab
     decoder_.resize(vocab_len);
+    int bytelevel_count = 0;
     for (int i = 0; i < vocab_len; i++) {
         std::getline(tok_file, line);
         encoder_.insert({line, i});
         decoder_[i] = line;
+        // Detect ByteLevel BPE by checking for </w> suffix
+        if (line.size() > 4 && line.substr(line.size() - 4) == "</w>") {
+            bytelevel_count++;
+        }
     }
+    // Detect BPE style: if more than 10% of tokens have </w> suffix, it's ByteLevel BPE
+    use_bytelevel_bpe_ = (bytelevel_count > vocab_len / 10);
+    printf("HuggingfaceTokenizer: detected %d tokens with </w> suffix out of %d vocab\n", bytelevel_count, vocab_len);
+    printf("HuggingfaceTokenizer: use_bytelevel_bpe_ = %s\n", use_bytelevel_bpe_ ? "true" : "false");
     // load merge_rule
     for (int i = 0; i < merge_len; i++) {
         std::getline(tok_file, line);
@@ -782,31 +791,108 @@ void HuggingfaceTokenizer::bpe(const std::wstring& token, const BPERanks& bpe_ra
 }
 
 void HuggingfaceTokenizer::encode(const std::string& str, std::vector<int>& ids) {
-    // Compile regex once; avoid O(n^2) copying from suffix().str().
-    static const std::regex re("('s|'t|'re|'ve|'m|'ll|'d| ?[[:alpha:]]+| ?[[:digit:]]+| ?[^\\s\\w]+|\\s+)");
-
     // Heuristic reserve.
     ids.reserve(ids.size() + str.size() / 4);
 
-    for (std::sregex_iterator it(str.begin(), str.end(), re), end; it != end; ++it) {
-        const std::string token = it->str();
-        std::wstring wtoken;
-        wtoken.reserve(token.size());
-        for (unsigned char c : token) {
-            wtoken.push_back(b2u_[(size_t)c]);
-        }
-
-        std::vector<std::wstring> bpe_tokens;
-        bpe_tokens.reserve(wtoken.size());
-        bpe(wtoken, bpe_ranks_, &bpe_tokens);
-        for (const auto& ws : bpe_tokens) {
-            const std::string s = wstring_to_utf8(ws);
-            auto iter = encoder_.find(s);
-            if (iter == encoder_.end()) {
-                std::cerr << "Error: token not in vocab: " << s << std::endl;
-                return;
+    if (use_bytelevel_bpe_) {
+        // ByteLevel BPE: used by MobileCLIP2-S2 and similar models
+        // Pattern matches Python's ByteLevel pre-tokenizer (no space prefix)
+        static const std::regex bytelevel_re("('s|'t|'re|'ve|'m|'ll|'d|[[:alpha:]]+|[[:digit:]]+|[^\\s\\w]+)");
+        
+        for (std::sregex_iterator it(str.begin(), str.end(), bytelevel_re), end; it != end; ++it) {
+            std::string token = it->str();
+            
+            // ByteLevel BPE: convert each byte to unicode representation
+            std::wstring wtoken;
+            wtoken.reserve(token.size());
+            for (unsigned char c : token) {
+                wtoken.push_back(b2u_[(size_t)c]);
             }
-            ids.push_back(iter->second);
+
+            // ByteLevel BPE: add U+0120 suffix to mark end of word
+            if (!wtoken.empty()) {
+                wtoken += (wchar_t)0x0120;
+            }
+
+            std::vector<std::wstring> bpe_tokens;
+            bpe_tokens.reserve(wtoken.size());
+            bpe(wtoken, bpe_ranks_, &bpe_tokens);
+            
+            // Process BPE tokens for ByteLevel BPE
+            for (size_t i = 0; i < bpe_tokens.size(); ++i) {
+                std::string s = wstring_to_utf8(bpe_tokens[i]);
+                
+                // Check if this is the last token and is a standalone U+0120
+                if (i == bpe_tokens.size() - 1 && s == "\xC4\xA0") {
+                    // Try to merge with previous token to form word with </w> suffix
+                    if (i > 0 && !ids.empty()) {
+                        // Get the previous token string
+                        std::string prev_s = wstring_to_utf8(bpe_tokens[i-1]);
+                        // Remove the previous token's ID from ids
+                        ids.pop_back();
+                        // Merge: prev_s + U+0120 -> prev_s + </w>
+                        size_t pos = prev_s.find("\xC4\xA0");
+                        if (pos != std::string::npos) {
+                            prev_s.replace(pos, 2, "</w>");
+                        } else {
+                            prev_s += "</w>";
+                        }
+                        auto iter = encoder_.find(prev_s);
+                        if (iter != encoder_.end()) {
+                            ids.push_back(iter->second);
+                        } else {
+                            // Fallback: add back the previous token without </w>
+                            auto prev_iter = encoder_.find(wstring_to_utf8(bpe_tokens[i-1]));
+                            if (prev_iter != encoder_.end()) {
+                                ids.push_back(prev_iter->second);
+                            }
+                        }
+                    }
+                    // Skip standalone U+0120
+                    continue;
+                }
+                
+                // Skip standalone U+0120 character (UTF-8: 0xC4 0xA0)
+                if (s == "\xC4\xA0") {
+                    continue;
+                }
+                // Convert U+0120 character to </w> string for vocab lookup
+                size_t pos = s.find("\xC4\xA0");  // U+0120 in UTF-8
+                if (pos != std::string::npos) {
+                    s.replace(pos, 2, "</w>");  // Replace U+0120 (2 bytes) with </w>
+                }
+                auto iter = encoder_.find(s);
+                if (iter == encoder_.end()) {
+                    std::cerr << "Error: token not in vocab: " << s << std::endl;
+                    return;
+                }
+                ids.push_back(iter->second);
+            }
+        }
+    } else {
+        // GPT-2 style BPE: used by OpenAI CLIP and similar models
+        static const std::regex gpt2_re("('s|'t|'re|'ve|'m|'ll|'d| ?[[:alpha:]]+| ?[[:digit:]]+| ?[^\\s\\w]+|\\s+)");
+        
+        for (std::sregex_iterator it(str.begin(), str.end(), gpt2_re), end; it != end; ++it) {
+            const std::string token = it->str();
+            std::wstring wtoken;
+            wtoken.reserve(token.size());
+            for (unsigned char c : token) {
+                wtoken.push_back(b2u_[(size_t)c]);
+            }
+
+            std::vector<std::wstring> bpe_tokens;
+            bpe_tokens.reserve(wtoken.size());
+            bpe(wtoken, bpe_ranks_, &bpe_tokens);
+            for (const auto& ws : bpe_tokens) {
+                const std::string s = wstring_to_utf8(ws);
+                auto iter = encoder_.find(s);
+                if (iter == encoder_.end()) {
+                    std::cerr << "Error: token not in vocab: " << s << std::endl;
+                    return;
+                }
+                ids.push_back(iter->second);
+            }
         }
     }
 }

@@ -20,6 +20,8 @@ protected:
     float siglip2_logit_scale = 4.7244534f;
     float siglip2_logit_bias = -16.771725f;
 
+    // MobileCLIP2-S2 parameters - uses standard CLIP softmax postprocessing
+
     static inline void fast_softmax_row(const std::vector<float> &row, std::vector<float> &out)
     {
         float maxVal = *std::max_element(row.begin(), row.end());
@@ -172,12 +174,20 @@ public:
 
         // Set image preprocessing parameters based on model type
         CLIPType clip_type = m_text_encoder->get_clip_type();
-        if (clip_type == CLIPType::siglip2)
+        if (clip_type == CLIPType::siglip2 || clip_type == CLIPType::mobileclip2)
         {
             if (m_image_encoder != nullptr)
             {
-                m_image_encoder->set_preprocess_params(SIGLIP2_PREPROCESS);
-                ALOGI("SigLIP2: set image preprocessing parameters (mean=0.5, std=0.5)");
+                if (clip_type == CLIPType::siglip2)
+                {
+                    m_image_encoder->set_preprocess_params(SIGLIP2_PREPROCESS);
+                    ALOGI("SigLIP2: set image preprocessing parameters (mean=0.5, std=0.5)");
+                }
+                else if (clip_type == CLIPType::mobileclip2)
+                {
+                    m_image_encoder->set_preprocess_params(MOBILECLIP2_PREPROCESS);
+                    ALOGI("MobileCLIP2-S2: set image preprocessing parameters (mean=0, std=1)");
+                }
             }
         }
 
