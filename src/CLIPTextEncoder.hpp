@@ -28,6 +28,8 @@ inline int model_type_to_clip_type(model_type_e type)
             return 4; // CLIPType::siglip2
         case model_type_mobileclip2:
             return 5; // CLIPType::mobileclip2
+        case model_type_fg_clip2:
+            return 6; // CLIPType::fg_clip2
         default:
             return 0; // CLIPType::unknown
     }
@@ -40,7 +42,8 @@ enum class CLIPType
     cn_clip,
     clip,
     siglip2,
-    mobileclip2
+    mobileclip2,
+    fg_clip2
 };
 
 class CLIPTextEncoder
@@ -59,7 +62,8 @@ protected:
         {CLIPType::cn_clip, {"[CLS]", "[SEP]"}},
         {CLIPType::clip, {"<|startoftext|>", "<|endoftext|>"}},
         {CLIPType::siglip2, {"", "<eos>"}},
-        {CLIPType::mobileclip2, {"<|startoftext|>", "<|endoftext|>"}}};
+        {CLIPType::mobileclip2, {"<|startoftext|>", "<|endoftext|>"}},
+        {CLIPType::fg_clip2, {"", "<eos>"}}};
 
     CLIPType clip_type = CLIPType::unknown;
     std::string bos_str;
@@ -74,9 +78,9 @@ protected:
         {
             PAD_TOKEN = 1;
         }
-        else if (clip_type == CLIPType::siglip2)
+        else if (clip_type == CLIPType::siglip2 || clip_type == CLIPType::fg_clip2)
         {
-            PAD_TOKEN = 0; // <pad> token id is 0 for SigLIP2
+            PAD_TOKEN = 0; // <pad> token id is 0 for SigLIP2/FG-CLIP2
         }
         else
         {

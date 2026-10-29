@@ -9,6 +9,7 @@
 
 #include "CLIPTextEncoderAX650.hpp"
 #include "CLIPImageEncoderAX650.hpp"
+#include "CLIPImageEncoderFGCLIP.hpp"
 
 class CLIP
 {
@@ -19,6 +20,10 @@ protected:
     // SigLIP2 parameters from model
     float siglip2_logit_scale = 4.7244534f;
     float siglip2_logit_bias = -16.771725f;
+
+    // FG-CLIP2 parameters from the AXERA model card
+    float fgclip2_logit_scale = 4.75f;
+    float fgclip2_logit_bias = -16.75f;
 
     // MobileCLIP2-S2 parameters - uses standard CLIP softmax postprocessing
 
@@ -95,11 +100,13 @@ protected:
     }
 
     // SigLIP2 postprocess with sigmoid (no softmax)
-    void postprocess_siglip2(
+    void postprocess_siglip_like(
         const std::vector<std::vector<float>> &imageFeatures,
         const std::vector<std::vector<float>> &textFeatures,
         std::vector<std::vector<float>> &logits_per_image,
-        std::vector<std::vector<float>> &logits_per_text)
+        std::vector<std::vector<float>> &logits_per_text,
+        float logit_scale,
+        float logit_bias)
     {
         // Compute logits_per_text = text @ image^T * exp(logit_scale) + logit_bias
         // Then apply sigmoid to get probabilities
@@ -117,7 +124,7 @@ protected:
                 for (size_t i = 0; i < txtVec.size(); ++i)
                     dot += txtVec[i] * imgVec[i];
                 // Apply logit_scale and logit_bias
-                float logit = dot * std::exp(siglip2_logit_scale) + siglip2_logit_bias;
+                float logit = dot * std::exp(logit_scale) + logit_bias;
                 // Apply sigmoid to get probability
                 row.push_back(sigmoid(logit));
             }
@@ -132,6 +139,52 @@ protected:
 
         logits_per_image = std::move(logitsPerImage);
         logits_per_text = std::move(logitsPerText);
+    }
+
+    void postprocess_siglip2(
+        const std::vector<std::vector<float>> &imageFeatures,
+        const std::vector<std::vector<float>> &textFeatures,
+        std::vector<std::vector<float>> &logits_per_image,
+        std::vector<std::vector<float>> &logits_per_text)
+    {
+        postprocess_siglip_like(imageFeatures, textFeatures, logits_per_image, logits_per_text,
+                                siglip2_logit_scale, siglip2_logit_bias);
+    }
+
+    void postprocess_fgclip2(
+        const std::vector<std::vector<float>> &imageFeatures,
+        const std::vector<std::vector<float>> &textFeatures,
+        std::vector<std::vector<float>> &logits_per_image,
+        std::vector<std::vector<float>> &logits_per_text)
+    {
+        // FG-CLIP2 follows the AXERA reference implementation: scale and shift
+        // image @ text^T, then softmax over the text dimension.
+        std::vector<std::vector<float>> logitsPerImage;
+        logitsPerImage.reserve(imageFeatures.size());
+        for (const auto &imgVec : imageFeatures)
+        {
+            std::vector<float> row;
+            row.reserve(textFeatures.size());
+            for (const auto &txtVec : textFeatures)
+            {
+                float dot = 0.0f;
+                for (size_t i = 0; i < imgVec.size(); ++i)
+                    dot += imgVec[i] * txtVec[i];
+                row.push_back(dot * std::exp(fgclip2_logit_scale) + fgclip2_logit_bias);
+            }
+            logitsPerImage.push_back(std::move(row));
+        }
+
+        // Keep the libclip text-to-image API meaningful as well: the same raw
+        // scores are transposed and normalized across the image database.
+        std::vector<std::vector<float>> logitsPerText(textFeatures.size(),
+                                                      std::vector<float>(imageFeatures.size()));
+        for (size_t i = 0; i < logitsPerImage.size(); ++i)
+            for (size_t j = 0; j < logitsPerImage[i].size(); ++j)
+                logitsPerText[j][i] = logitsPerImage[i][j];
+
+        softmax(logitsPerImage, logits_per_image);
+        softmax(logitsPerText, logits_per_text);
     }
 
 public:
@@ -174,7 +227,8 @@ public:
 
         // Set image preprocessing parameters based on model type
         CLIPType clip_type = m_text_encoder->get_clip_type();
-        if (clip_type == CLIPType::siglip2 || clip_type == CLIPType::mobileclip2)
+        if (clip_type == CLIPType::siglip2 || clip_type == CLIPType::mobileclip2 ||
+            clip_type == CLIPType::fg_clip2)
         {
             if (m_image_encoder != nullptr)
             {
@@ -187,6 +241,11 @@ public:
                 {
                     m_image_encoder->set_preprocess_params(MOBILECLIP2_PREPROCESS);
                     ALOGI("MobileCLIP2-S2: set image preprocessing parameters (mean=0, std=1)");
+                }
+                else if (clip_type == CLIPType::fg_clip2)
+                {
+                    m_image_encoder->set_preprocess_params(FGCLIP2_PREPROCESS);
+                    ALOGI("FG-CLIP2: set image preprocessing parameters (mean=0.5, std=0.5)");
                 }
             }
         }
@@ -207,7 +266,10 @@ public:
     {
         if (m_image_encoder == nullptr)
         {
-            m_image_encoder.reset(new CLIPImageEncoderAX650);
+            if (init_info->model_type == model_type_fg_clip2)
+                m_image_encoder.reset(new CLIPImageEncoderFGCLIP);
+            else
+                m_image_encoder.reset(new CLIPImageEncoderAX650);
         }
         return m_image_encoder->load_image_encoder(init_info);
     }
@@ -264,6 +326,10 @@ public:
         if (clip_type == CLIPType::siglip2)
         {
             postprocess_siglip2(image_features, text_features, logits_per_image, logits_per_text);
+        }
+        else if (clip_type == CLIPType::fg_clip2)
+        {
+            postprocess_fgclip2(image_features, text_features, logits_per_image, logits_per_text);
         }
         else
         {

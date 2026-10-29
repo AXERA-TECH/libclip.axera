@@ -91,6 +91,32 @@ sudo apt install libopencv-dev build-essential
 
 [mobileclip2](https://huggingface.co/AXERA-TECH/MobileCLIP/tree/main/mobileclip2_s2/AX650)
 
+[fg-clip2](https://huggingface.co/AXERA-TECH/FG-CLIP) ([ModelScope](https://www.modelscope.cn/models/AXERA-TECH/FG-CLIP))
+
+### FG-CLIP2（`model_type=6`）
+
+FG-CLIP2 使用动态分辨率、patch 形式的图像编码器和 Gemma BPE tokenizer。
+下载 AXERA 模型包后，需要先将 `tokenizer.json` 转换为 libclip 使用的格式：
+
+```bash
+# Hugging Face 镜像（也可使用 ModelScope：modelscope download AXERA-TECH/FG-CLIP --local-dir FG-CLIP）
+export HF_ENDPOINT=https://hf-mirror.com
+hf download AXERA-TECH/FG-CLIP --local-dir FG-CLIP
+
+python tests/tokenizer/convert_fgclip2_tokenizer.py \
+  --tokenizer_json FG-CLIP/fg-clip2-base/tokenizer.json \
+  --dst FG-CLIP/fgclip2_tokenizer.txt
+
+./test_match_by_text \
+  --ienc FG-CLIP/image_encoder.axmodel \
+  --tenc FG-CLIP/text_encoder.axmodel \
+  --vocab FG-CLIP/fgclip2_tokenizer.txt \
+  --db_path fgclip2_feat_db/ \
+  -i images/ \
+  -t "一个简约风格的卧室" \
+  -m 6
+```
+
 ### 在x86上（用于开发/测试）
 
 ```bash

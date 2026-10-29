@@ -27,6 +27,11 @@ static const ImagePreprocessParams MOBILECLIP2_PREPROCESS = {
     {0.0f, 0.0f, 0.0f},
     {1.0f / 255.f, 1.0f / 255.f, 1.0f / 255.f}};
 
+// FG-CLIP2 uses the SigLIP2 image normalization.
+static const ImagePreprocessParams FGCLIP2_PREPROCESS = {
+    {0.5f * 255.f, 0.5f * 255.f, 0.5f * 255.f},
+    {1 / (0.5f * 255.f), 1 / (0.5f * 255.f), 1 / (0.5f * 255.f)}};
+
 class CLIPImageEncoder
 {
 protected:

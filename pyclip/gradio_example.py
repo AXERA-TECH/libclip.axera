@@ -32,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--db_path', type=str, default='clip_feat_db_coco')
     parser.add_argument('--image_folder', type=str, default='coco_1000')
     parser.add_argument('--dev_type', type=str, default='host', choices=['host', 'axcl'])
-    parser.add_argument('--model_type', type=str, default='clip', choices=['clip', 'cn_clip', 'jina_clip_v2', 'siglip2', 'mobileclip2'])
+    parser.add_argument('--model_type', type=str, default='clip', choices=['clip', 'cn_clip', 'jina_clip_v2', 'siglip2', 'mobileclip2', 'fg_clip2'])
     args = parser.parse_args()
 
     # 转换 model_type 参数
@@ -41,7 +41,8 @@ if __name__ == '__main__':
         'cn_clip': ModelType.model_type_cn_clip,
         'jina_clip_v2': ModelType.model_type_jina_clip_v2,
         'siglip2': ModelType.model_type_siglip2,
-        'mobileclip2': ModelType.model_type_mobileclip2
+        'mobileclip2': ModelType.model_type_mobileclip2,
+        'fg_clip2': ModelType.model_type_fg_clip2
     }
     args.model_type = model_type_map[args.model_type]
 

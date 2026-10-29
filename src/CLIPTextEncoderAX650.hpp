@@ -5,6 +5,8 @@
 #include "mmap.hpp"
 
 #include <math.h>
+#include <algorithm>
+#include <cctype>
 
 class CLIPTextEncoderAX650 : public CLIPTextEncoder
 {
@@ -72,11 +74,17 @@ public:
         for (size_t i = 0; i < texts.size(); i++)
         {
             std::string text;
-            // SigLIP2: add_eos_token=True, add_bos_token=False
+            // SigLIP2/FG-CLIP2: add_eos_token=True, add_bos_token=False
             // Other CLIP: add both bos and eos
-            if (clip_type == CLIPType::siglip2)
+            if (clip_type == CLIPType::siglip2 || clip_type == CLIPType::fg_clip2)
             {
-                text = texts[i] + eos_str;
+                text = texts[i];
+                if (clip_type == CLIPType::fg_clip2)
+                {
+                    std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c)
+                                   { return static_cast<char>(std::tolower(c)); });
+                }
+                text += eos_str;
             }
             else
             {

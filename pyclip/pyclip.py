@@ -13,6 +13,7 @@ class ModelType(ctypes.c_int):
     model_type_jina_clip_v2 = 3
     model_type_siglip2 = 4
     model_type_mobileclip2 = 5
+    model_type_fg_clip2 = 6
 
 
 class ClipInit(ctypes.Structure):

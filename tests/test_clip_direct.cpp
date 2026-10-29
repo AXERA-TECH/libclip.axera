@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
     if (argc < 4)
     {
         std::cout << "Usage: " << argv[0] << " <model_type> <image1,image2,...> <text1,text2,...> [ienc] [tenc] [vocab]" << std::endl;
-        std::cout << "  model_type: 1=clip, 2=cn_clip, 3=jina_clip_v2, 4=siglip2, 5=mobileclip2" << std::endl;
+        std::cout << "  model_type: 1=clip, 2=cn_clip, 3=jina_clip_v2, 4=siglip2, 5=mobileclip2, 6=fg_clip2" << std::endl;
         std::cout << "  images: comma-separated image paths" << std::endl;
         std::cout << "  texts: comma-separated text queries (use \"\" for texts with spaces)" << std::endl;
         std::cout << std::endl;
@@ -352,9 +352,23 @@ int main(int argc, char *argv[])
     
     clip.decode(image_features, text_features, logits_per_image, logits_per_text);
 
-    // logits_per_text[text_idx][image_idx] = similarity
-    print_similarity_table(texts, image_names, logits_per_text);
-    print_best_matches(texts, image_names, logits_per_text);
+    if (model_type == model_type_fg_clip2)
+    {
+        std::cout << "\nImage-to-text scores (softmax over texts):" << std::endl;
+        for (size_t i = 0; i < image_names.size(); i++)
+        {
+            std::cout << "  " << image_names[i] << ":";
+            for (size_t j = 0; j < texts.size(); j++)
+                std::cout << " " << std::fixed << std::setprecision(4) << logits_per_image[i][j];
+            std::cout << std::endl;
+        }
+    }
+    else
+    {
+        // logits_per_text[text_idx][image_idx] = similarity
+        print_similarity_table(texts, image_names, logits_per_text);
+        print_best_matches(texts, image_names, logits_per_text);
+    }
 
     // 清理
     if (ax_devices.host.available)

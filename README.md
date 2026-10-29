@@ -97,6 +97,32 @@ sudo apt install libopencv-dev build-essential
 
 [mobileclip2](https://huggingface.co/AXERA-TECH/MobileCLIP/tree/main/mobileclip2_s2/AX650)
 
+[fg-clip2](https://huggingface.co/AXERA-TECH/FG-CLIP) ([ModelScope](https://www.modelscope.cn/models/AXERA-TECH/FG-CLIP))
+
+### FG-CLIP2 (`model_type=6`)
+
+FG-CLIP2 uses a dynamic-resolution, patch-based image encoder and a Gemma BPE
+tokenizer. Download the AXERA model package and convert `tokenizer.json` once:
+
+```bash
+# Hugging Face mirror (or use ModelScope: modelscope download AXERA-TECH/FG-CLIP --local-dir FG-CLIP)
+export HF_ENDPOINT=https://hf-mirror.com
+hf download AXERA-TECH/FG-CLIP --local-dir FG-CLIP
+
+python tests/tokenizer/convert_fgclip2_tokenizer.py \
+  --tokenizer_json FG-CLIP/fg-clip2-base/tokenizer.json \
+  --dst FG-CLIP/fgclip2_tokenizer.txt
+
+./test_match_by_text \
+  --ienc FG-CLIP/image_encoder.axmodel \
+  --tenc FG-CLIP/text_encoder.axmodel \
+  --vocab FG-CLIP/fgclip2_tokenizer.txt \
+  --db_path fgclip2_feat_db/ \
+  -i images/ \
+  -t "a photo of a bedroom" \
+  -m 6
+```
+
 ### On x86 (for development/testing)
 
 ```bash
