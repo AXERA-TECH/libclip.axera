@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <array>
 #include <regex>
+#include <sstream>
 #include <cstring> // For strncpy
 
 #if defined(_WIN32) || defined(_WIN64)
